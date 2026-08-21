@@ -3,13 +3,34 @@ name: Update Festival Wallpapers
 on:
   workflow_dispatch:
     inputs:
+      theme:
+        description: "Wallpaper to fetch"
+        required: true
+        default: "onam"
+        type: choice
+        options:
+          - onam
+          - ramadan
+          - eid
+          - hajj
+          - muharram
+          - vishu
+          - holi
+          - diwali
+          - christmas
+          - easter
+          - bahrain
+          - india
+          - all
       refresh_all:
-        description: "Replace existing festival wallpapers too"
+        description: "Replace an existing cached wallpaper"
         required: false
         default: false
         type: boolean
+
   schedule:
-    # 21:15 UTC = 00:15 Bahrain time (next calendar day)
+    # 00:15 Bahrain time. Scheduled runs fetch only ONE missing wallpaper,
+    # so Wikimedia Commons is not hammered by a public GitHub runner.
     - cron: "15 21 * * *"
 
 permissions:
@@ -23,21 +44,23 @@ jobs:
   update-wallpapers:
     runs-on: ubuntu-latest
     env:
+      TARGET_THEME: ${{ github.event_name == 'workflow_dispatch' && inputs.theme || 'auto' }}
       FORCE_REFRESH: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_all || false }}
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Build Wikimedia Commons festival wallpaper library
+      - name: Fetch Wikimedia Commons wallpaper
         shell: python
         run: |
           import html
           import json
-          import mimetypes
           import os
+          import random
           import re
           import time
+          import urllib.error
           import urllib.parse
           import urllib.request
           from datetime import datetime, timezone
@@ -46,59 +69,112 @@ jobs:
           API = "https://commons.wikimedia.org/w/api.php"
           OUT_DIR = Path("festival-wallpapers")
           MANIFEST = Path("festival-wallpaper.json")
-          USER_AGENT = "SenaishaLive/1.0 (festival wallpaper updater; GitHub Actions)"
+
+          USER_AGENT = (
+              "SenaishaLiveFestivalWallpaper/1.2 "
+              "(https://github.com/naps73r/senaishalive; "
+              "non-commercial radio background cache)"
+          )
+
+          TARGET = os.getenv("TARGET_THEME", "auto").strip().lower()
           FORCE = os.getenv("FORCE_REFRESH", "false").lower() == "true"
 
-          # Search phrases deliberately favor scenery, decorations and objects
-          # rather than portraits, posters or text-heavy artwork.
           THEMES = {
               "ramadan": {
                   "label": "Ramadan",
-                  "query": "Ramadan lantern crescent night lights"
+                  "queries": [
+                      "Ramadan lantern night",
+                      "Ramadan mosque lights",
+                      "Ramadan decorations"
+                  ]
               },
               "eid": {
                   "label": "Eid",
-                  "query": "Eid lantern mosque lights night"
+                  "queries": [
+                      "Eid al-Fitr mosque lights",
+                      "Eid decorations lantern",
+                      "Eid celebration lights"
+                  ]
               },
               "hajj": {
                   "label": "Hajj",
-                  "query": "Kaaba Mecca night architecture"
+                  "queries": [
+                      "Kaaba Mecca",
+                      "Masjid al-Haram night",
+                      "Kaaba night"
+                  ]
               },
               "muharram": {
                   "label": "Muharram",
-                  "query": "Islamic crescent moon night sky"
+                  "queries": [
+                      "Islamic crescent moon night",
+                      "mosque moon night",
+                      "Islamic architecture night"
+                  ]
               },
               "onam": {
                   "label": "Onam",
-                  "query": "Onam pookalam flower carpet Kerala"
+                  "queries": [
+                      "Onam pookalam",
+                      "pookalam Kerala",
+                      "Onam flower carpet"
+                  ]
               },
               "vishu": {
                   "label": "Vishu",
-                  "query": "Vishukkani Kerala Vishu kani"
-              },
-              "christmas": {
-                  "label": "Christmas",
-                  "query": "Christmas lights tree night"
+                  "queries": [
+                      "Vishukkani",
+                      "Vishu kani Kerala",
+                      "Vishu Kerala"
+                  ]
               },
               "holi": {
                   "label": "Holi",
-                  "query": "Holi colour powder colorful"
+                  "queries": [
+                      "Holi colour powder",
+                      "Holi colors",
+                      "Holi powder"
+                  ]
               },
               "diwali": {
                   "label": "Diwali",
-                  "query": "Diwali diyas lamps lights"
+                  "queries": [
+                      "Diwali diyas",
+                      "Deepavali lamps",
+                      "Diwali lights lamps"
+                  ]
               },
-              "bahrain": {
-                  "label": "Bahrain National Day",
-                  "query": "Bahrain flag Manama skyline"
-              },
-              "india": {
-                  "label": "India National Day",
-                  "query": "India flag India Gate New Delhi"
+              "christmas": {
+                  "label": "Christmas",
+                  "queries": [
+                      "Christmas tree lights night",
+                      "Christmas lights",
+                      "Christmas decorations night"
+                  ]
               },
               "easter": {
                   "label": "Easter",
-                  "query": "Easter eggs spring flowers"
+                  "queries": [
+                      "Easter eggs flowers",
+                      "Easter spring flowers",
+                      "Easter decorations"
+                  ]
+              },
+              "bahrain": {
+                  "label": "Bahrain National Day",
+                  "queries": [
+                      "Bahrain flag Manama",
+                      "Bahrain flag",
+                      "Manama Bahrain skyline"
+                  ]
+              },
+              "india": {
+                  "label": "India National Day",
+                  "queries": [
+                      "India flag India Gate",
+                      "India flag New Delhi",
+                      "India Gate New Delhi"
+                  ]
               }
           }
 
@@ -110,7 +186,8 @@ jobs:
 
           BAD_TITLE_WORDS = {
               "poster", "logo", "banner", "advert", "advertisement",
-              "screenshot", "map", "stamp", "coin", "book", "pamphlet"
+              "screenshot", "map", "stamp", "coin", "book", "pamphlet",
+              "svg", "diagram"
           }
 
           def strip_html(value):
@@ -125,78 +202,115 @@ jobs:
               return strip_html(item.get("value", ""))
 
           def license_is_safe(name):
-              n = (name or "").strip().lower()
-              if not n:
-                  return False
+              n = (name or "").strip().lower().replace("_", " ")
               return (
                   "public domain" in n
-                  or n == "cc0"
-                  or n.startswith("cc0 ")
+                  or n.startswith("cc0")
                   or n.startswith("cc by ")
                   or n.startswith("cc by-sa ")
+                  or n.startswith("cc-by ")
+                  or n.startswith("cc-by-sa ")
               )
 
-          def request_json(params, attempts=3):
-              query = urllib.parse.urlencode(params)
-              request = urllib.request.Request(
-                  API + "?" + query,
+          def polite_wait(seconds, reason):
+              print(f"Waiting {seconds}s {reason}...")
+              time.sleep(seconds)
+
+          def open_with_retry(request, attempts=6, timeout=60):
+              last = None
+
+              for attempt in range(1, attempts + 1):
+                  try:
+                      return urllib.request.urlopen(request, timeout=timeout)
+                  except urllib.error.HTTPError as exc:
+                      last = exc
+
+                      if exc.code != 429 or attempt == attempts:
+                          raise
+
+                      retry_after = exc.headers.get("Retry-After")
+                      try:
+                          wait = int(retry_after)
+                      except (TypeError, ValueError):
+                          wait = min(20 * attempt, 100)
+
+                      wait += random.randint(1, 5)
+                      print(
+                          f"Wikimedia returned HTTP 429. "
+                          f"Retry {attempt}/{attempts} in {wait}s."
+                      )
+                      time.sleep(wait)
+
+                  except Exception as exc:
+                      last = exc
+                      if attempt == attempts:
+                          raise
+
+                      wait = min(8 * attempt, 40)
+                      print(
+                          f"Temporary network error: {exc}. "
+                          f"Retry {attempt}/{attempts} in {wait}s."
+                      )
+                      time.sleep(wait)
+
+              raise last
+
+          def request_json(params):
+              params = dict(params)
+              params["maxlag"] = "5"
+
+              req = urllib.request.Request(
+                  API + "?" + urllib.parse.urlencode(params),
                   headers={
                       "User-Agent": USER_AGENT,
                       "Accept": "application/json"
                   }
               )
-              last = None
-              for attempt in range(attempts):
-                  try:
-                      with urllib.request.urlopen(request, timeout=35) as response:
-                          return json.loads(response.read().decode("utf-8"))
-                  except Exception as exc:
-                      last = exc
-                      if attempt + 1 < attempts:
-                          time.sleep(3 * (attempt + 1))
-              raise last
+
+              with open_with_retry(req, attempts=6, timeout=45) as response:
+                  return json.loads(response.read().decode("utf-8"))
 
           def search_candidates(query):
-              params = {
+              data = request_json({
                   "action": "query",
                   "format": "json",
                   "formatversion": "2",
                   "generator": "search",
                   "gsrsearch": query,
                   "gsrnamespace": "6",
-                  "gsrlimit": "24",
+                  "gsrlimit": "36",
                   "prop": "imageinfo",
                   "iiprop": "url|size|dimensions|mime|extmetadata",
-                  "iiurlwidth": "1600",
+                  "iiurlwidth": "1400",
                   "iiextmetadatalanguage": "en",
                   "iiextmetadatafilter":
-                      "Artist|LicenseShortName|UsageTerms|LicenseUrl|ImageDescription|Credit"
-              }
-              data = request_json(params)
+                      "Artist|LicenseShortName|UsageTerms|LicenseUrl|"
+                      "ImageDescription|Credit"
+              })
+
               pages = data.get("query", {}).get("pages", [])
               candidates = []
 
               for rank, page in enumerate(pages):
-                  infos = page.get("imageinfo") or []
-                  if not infos:
+                  info_list = page.get("imageinfo") or []
+                  if not info_list:
                       continue
-                  info = infos[0]
+
+                  info = info_list[0]
                   mime = info.get("mime", "")
                   if mime not in SAFE_MIMES:
                       continue
 
                   width = int(info.get("width") or 0)
                   height = int(info.get("height") or 0)
-                  if width < 1200 or height < 650 or height <= 0:
+                  if width < 900 or height < 500 or height <= 0:
                       continue
 
                   ratio = width / height
-                  if ratio < 1.28 or ratio > 2.65:
-                      continue
 
-                  meta = info.get("extmetadata") or {}
-                  license_name = metadata_value(meta, "LicenseShortName") or metadata_value(meta, "UsageTerms")
-                  if not license_is_safe(license_name):
+                  # CSS background-size: cover can crop mildly portrait-ish
+                  # sources, so this is deliberately less restrictive than V1.
+                  if ratio < 1.08 or ratio > 3.4:
                       continue
 
                   title = page.get("title", "")
@@ -204,24 +318,43 @@ jobs:
                   if any(word in title_lower for word in BAD_TITLE_WORDS):
                       continue
 
-                  thumb = info.get("thumburl") or info.get("url")
-                  if not thumb:
+                  meta = info.get("extmetadata") or {}
+                  license_name = (
+                      metadata_value(meta, "LicenseShortName")
+                      or metadata_value(meta, "UsageTerms")
+                  )
+
+                  if not license_is_safe(license_name):
                       continue
 
-                  creator = metadata_value(meta, "Artist") or "Wikimedia Commons contributor"
+                  image_url = info.get("thumburl") or info.get("url")
+                  if not image_url:
+                      continue
+
+                  creator = (
+                      metadata_value(meta, "Artist")
+                      or metadata_value(meta, "Credit")
+                      or "Wikimedia Commons contributor"
+                  )
+
                   license_url = metadata_value(meta, "LicenseUrl")
                   description = metadata_value(meta, "ImageDescription")
 
-                  # Prefer widescreen-ish high resolution images near the top
-                  # of Commons search, while retaining deterministic selection.
-                  ratio_score = max(0.0, 1.0 - abs(ratio - (16/9)) / 1.1)
-                  megapixels = min((width * height) / 1_000_000, 20)
-                  score = ratio_score * 8 + megapixels * .08 - rank * .08
+                  ratio_score = max(
+                      0.0,
+                      1.0 - abs(ratio - (16 / 9)) / 1.6
+                  )
+                  megapixels = min((width * height) / 1_000_000, 25)
+                  score = (
+                      ratio_score * 8
+                      + megapixels * 0.07
+                      - rank * 0.04
+                  )
 
                   candidates.append({
                       "score": score,
                       "title": title,
-                      "url": thumb,
+                      "url": image_url,
                       "mime": mime,
                       "width": width,
                       "height": height,
@@ -230,32 +363,79 @@ jobs:
                       "license_url": license_url,
                       "description": description[:260],
                       "source_page":
-                          "https://commons.wikimedia.org/wiki/" +
-                          urllib.parse.quote(title.replace(" ", "_"), safe=":_()/,-")
+                          "https://commons.wikimedia.org/wiki/"
+                          + urllib.parse.quote(
+                              title.replace(" ", "_"),
+                              safe=":_()/,-"
+                          )
                   })
 
-              candidates.sort(key=lambda item: (-item["score"], item["title"]))
+              candidates.sort(
+                  key=lambda item: (-item["score"], item["title"])
+              )
               return candidates
 
-          def download(url, target):
+          def find_candidate(theme):
+              for index, query in enumerate(theme["queries"], start=1):
+                  print(
+                      f"  Search {index}/{len(theme['queries'])}: {query}"
+                  )
+
+                  try:
+                      candidates = search_candidates(query)
+                  except Exception as exc:
+                      print(f"  Search error: {exc}")
+                      candidates = []
+
+                  if candidates:
+                      print(
+                          f"  Found {len(candidates)} usable landscape "
+                          f"candidate(s)."
+                      )
+                      return candidates[0]
+
+                  if index < len(theme["queries"]):
+                      polite_wait(12, "before fallback search")
+
+              return None
+
+          def download_image(url, target):
               req = urllib.request.Request(
                   url,
-                  headers={"User-Agent": USER_AGENT, "Accept": "image/*"}
+                  headers={
+                      "User-Agent": USER_AGENT,
+                      "Accept": "image/avif,image/webp,image/png,image/jpeg,image/*"
+                  }
               )
-              with urllib.request.urlopen(req, timeout=60) as response:
-                  data = response.read(6_000_001)
-                  content_type = response.headers.get_content_type()
-              if len(data) > 6_000_000:
-                  raise RuntimeError("download exceeded 6 MB safety limit")
+
+              with open_with_retry(req, attempts=6, timeout=75) as response:
+                  data = response.read(8_000_001)
+                  content_type = (
+                      response.headers.get_content_type()
+                      .split(";")[0]
+                      .strip()
+                      .lower()
+                  )
+
+              if len(data) > 8_000_000:
+                  raise RuntimeError(
+                      "selected Wikimedia thumbnail exceeded 8 MB"
+                  )
+
               if content_type not in SAFE_MIMES:
-                  raise RuntimeError(f"unexpected content type: {content_type}")
+                  raise RuntimeError(
+                      f"unexpected image content type: {content_type}"
+                  )
+
               target.write_bytes(data)
               return content_type
 
           OUT_DIR.mkdir(parents=True, exist_ok=True)
 
           try:
-              manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+              manifest = json.loads(
+                  MANIFEST.read_text(encoding="utf-8")
+              )
               if not isinstance(manifest, dict):
                   manifest = {}
           except Exception:
@@ -265,54 +445,100 @@ jobs:
           if not isinstance(wallpapers, dict):
               wallpapers = {}
 
-          changed = False
+          theme_order = list(THEMES.keys())
 
-          for theme_id, theme in THEMES.items():
+          if TARGET == "all":
+              requested = theme_order
+          elif TARGET == "auto":
+              # Scheduled runs deliberately fetch only one missing theme.
+              requested = []
+              for theme_id in theme_order:
+                  item = wallpapers.get(theme_id) or {}
+                  image_path = (
+                      Path(item["image"])
+                      if item.get("image")
+                      else None
+                  )
+                  if not image_path or not image_path.exists():
+                      requested = [theme_id]
+                      break
+          elif TARGET in THEMES:
+              requested = [TARGET]
+          else:
+              raise SystemExit(f"Unknown theme: {TARGET}")
+
+          if not requested:
+              print(
+                  "All festival wallpaper files are already present. "
+                  "Nothing to do."
+              )
+              raise SystemExit(0)
+
+          print("Requested theme(s): " + ", ".join(requested))
+
+          downloaded = []
+          failed = []
+
+          for position, theme_id in enumerate(requested):
+              theme = THEMES[theme_id]
               existing = wallpapers.get(theme_id) or {}
-              existing_path = Path(existing.get("image", "")) if existing.get("image") else None
+              existing_path = (
+                  Path(existing["image"])
+                  if existing.get("image")
+                  else None
+              )
 
-              if not FORCE and existing_path and existing_path.exists():
-                  print(f"{theme_id}: keeping existing {existing_path}")
+              if (
+                  not FORCE
+                  and existing_path
+                  and existing_path.exists()
+              ):
+                  print(
+                      f"{theme_id}: keeping existing {existing_path}"
+                  )
                   continue
 
-              print(f"{theme_id}: searching Wikimedia Commons...")
-              try:
-                  candidates = search_candidates(theme["query"])
-              except Exception as exc:
-                  print(f"{theme_id}: search failed: {exc}")
+              print(f"\n=== {theme['label']} ===")
+
+              selected = find_candidate(theme)
+              if not selected:
+                  print(
+                      f"{theme_id}: no suitable licensed image found "
+                      f"after fallback searches."
+                  )
+                  failed.append(theme_id)
                   continue
 
-              if not candidates:
-                  print(f"{theme_id}: no suitable landscape image found")
-                  continue
+              # Give Wikimedia's API/CDN breathing room before downloading.
+              polite_wait(15, "before image download")
 
-              selected = candidates[0]
               ext = SAFE_MIMES[selected["mime"]]
-
-              # Remove an older version with a different extension only when
-              # replacing this theme.
-              for stale in OUT_DIR.glob(theme_id + ".*"):
-                  if stale.name == ".gitkeep":
-                      continue
-                  try:
-                      stale.unlink()
-                  except OSError:
-                      pass
-
               target = OUT_DIR / f"{theme_id}{ext}"
 
               try:
-                  actual_mime = download(selected["url"], target)
+                  actual_mime = download_image(
+                      selected["url"],
+                      target
+                  )
               except Exception as exc:
                   print(f"{theme_id}: download failed: {exc}")
+                  failed.append(theme_id)
                   continue
 
-              # If the response MIME differed, normalize the extension.
               actual_ext = SAFE_MIMES[actual_mime]
               if target.suffix != actual_ext:
                   corrected = OUT_DIR / f"{theme_id}{actual_ext}"
                   target.replace(corrected)
                   target = corrected
+
+              # Remove only stale alternative extensions AFTER the new file
+              # has downloaded successfully.
+              for stale in OUT_DIR.glob(theme_id + ".*"):
+                  if stale != target and stale.name != ".gitkeep":
+                      try:
+                          stale.unlink()
+                      except OSError:
+                          pass
 
               wallpapers[theme_id] = {
                   "label": theme["label"],
@@ -327,38 +553,79 @@ jobs:
                   "original_height": selected["height"],
                   "source": "Wikimedia Commons"
               }
-              changed = True
-              print(f"{theme_id}: saved {target} — {selected['title']}")
 
-              # Be polite to Commons when the first library is being built.
-              time.sleep(1.0)
+              downloaded.append(theme_id)
+              print(
+                  f"{theme_id}: saved {target} — "
+                  f"{selected['title']}"
+              )
 
-          if changed or not MANIFEST.exists():
+              if position < len(requested) - 1:
+                  polite_wait(18, "before the next festival")
+
+          if downloaded:
               output = {
-                  "updated": datetime.now(timezone.utc).isoformat(),
+                  "updated":
+                      datetime.now(timezone.utc).isoformat(),
                   "source": "Wikimedia Commons",
                   "note":
-                      "Images are cached locally. See each entry for creator, "
-                      "license and Wikimedia Commons source page.",
+                      "Images are cached locally. See each entry for "
+                      "creator, license and Wikimedia Commons source page.",
                   "wallpapers": wallpapers
               }
+
               MANIFEST.write_text(
-                  json.dumps(output, ensure_ascii=False, indent=2) + "\n",
+                  json.dumps(
+                      output,
+                      ensure_ascii=False,
+                      indent=2
+                  ) + "\n",
                   encoding="utf-8"
               )
-          else:
-              print("Wallpaper library already complete; no manifest rewrite needed.")
+
+          print("\n=== RESULT ===")
+          print(
+              "Downloaded this run: "
+              + (", ".join(downloaded) if downloaded else "none")
+          )
+          print(
+              "Failed this run: "
+              + (", ".join(failed) if failed else "none")
+          )
+          print(
+              f"Cached library now contains "
+              f"{len(wallpapers)} theme(s)."
+          )
+
+          # Do not report a misleading green run when the requested fetch
+          # produced absolutely nothing.
+          if not downloaded:
+              already_present = all(
+                  (wallpapers.get(t) or {}).get("image")
+                  for t in requested
+              )
+
+              if not already_present:
+                  raise SystemExit(
+                      "No requested wallpaper could be downloaded. "
+                      "See the log above."
+                  )
 
       - name: Commit wallpaper changes
         shell: bash
         run: |
-          if git diff --quiet -- festival-wallpaper.json festival-wallpapers/; then
-            echo "No festival wallpaper changes."
+          git add festival-wallpaper.json festival-wallpapers/
+
+          if git diff --cached --quiet; then
+            echo "No festival wallpaper changes to commit."
             exit 0
           fi
 
           git config user.name "senaisha-live-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add festival-wallpaper.json festival-wallpapers/
+
           git commit -m "Update festival wallpaper library"
-          git push
+
+          # News automation may have committed meanwhile.
+          git pull --rebase origin main
+          git push origin main
