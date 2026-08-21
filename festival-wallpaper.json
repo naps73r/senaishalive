@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-21T22:04:07.737459+00:00",
+  "updated": "2026-08-21T22:07:15.685001+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -14,6 +14,19 @@
       "description": "Onam Week Celebration",
       "original_width": 6016,
       "original_height": 4016,
+      "source": "Wikimedia Commons"
+    },
+    "diwali": {
+      "label": "Diwali",
+      "image": "festival-wallpapers/diwali.jpg",
+      "creator": "humdingor",
+      "license": "CC BY-SA 2.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Diwali_Diyas_Lamps.jpg",
+      "source_title": "File:Diwali Diyas Lamps.jpg",
+      "description": "Diyas for Divali Deepavali",
+      "original_width": 5616,
+      "original_height": 3744,
       "source": "Wikimedia Commons"
     }
   }
