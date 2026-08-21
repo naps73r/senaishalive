@@ -2776,7 +2776,8 @@
       visibility: hidden !important;
     }
 
-    body.animated-background-on {
+    body.animated-background-on,
+    body.classic-background-on {
       background: #00222B;
       isolation: isolate;
     }
@@ -2786,8 +2787,17 @@
       isolation: isolate;
     }
 
+    body.classic-background-on::before,
+    body.classic-background-on::after,
+    body.classic-background-on .ambient-grid,
+    body.classic-background-on .seasonal-decor {
+      opacity: 0 !important;
+      visibility: hidden !important;
+    }
+
     body.animated-background-on .app-shell,
-    body.photo-background-on .app-shell {
+    body.photo-background-on .app-shell,
+    body.classic-background-on .app-shell {
       position: relative;
       z-index: 2;
     }
@@ -2962,14 +2972,20 @@
       <span class="background-mode-check">✓</span>
     </button>
     <button class="background-mode-option" type="button" role="menuitemradio"
+            aria-checked="false" data-background-mode="classic">
+      <span class="background-mode-option-icon">🌊</span>
+      <span><strong>Classic</strong><small>Original SenaishaLive teal, no particles</small></span>
+      <span class="background-mode-check">✓</span>
+    </button>
+    <button class="background-mode-option" type="button" role="menuitemradio"
             aria-checked="false" data-background-mode="motion">
       <span class="background-mode-option-icon">✨</span>
-      <span><strong>Motion</strong><small>Original Alaina particles</small></span>
+      <span><strong>Motion</strong><small>Classic background + particles</small></span>
       <span class="background-mode-check">✓</span>
     </button>
 
     <div id="backgroundPhotoStatus" class="background-photo-status">
-      Photo mode will activate automatically on supported festival days.
+      Photo follows festival days. Classic restores the original SenaishaLive teal.
     </div>
     <a id="backgroundPhotoCredit" class="background-photo-credit" href="#"
        target="_blank" rel="noopener noreferrer" hidden></a>
@@ -4766,6 +4782,7 @@
     const MODE_META = {
       ambient: { icon: "🎨", label: "Ambient" },
       photo:   { icon: "🖼️", label: "Photo" },
+      classic: { icon: "🌊", label: "Classic" },
       motion:  { icon: "✨", label: "Motion" }
     };
 
@@ -4958,6 +4975,7 @@
       const canShowPhoto = wanted === "photo" && photo && photo.image;
 
       document.body.classList.toggle("animated-background-on", wanted === "motion");
+      document.body.classList.toggle("classic-background-on", wanted === "classic");
       document.body.classList.toggle("photo-background-on", Boolean(canShowPhoto));
 
       if (wanted === "motion") {
@@ -4983,6 +5001,8 @@
       if (notify && typeof window.showAlaina === "function") {
         if (wanted === "motion") {
           window.showAlaina("Original animated background on ✨");
+        } else if (wanted === "classic") {
+          window.showAlaina("Classic SenaishaLive background on 🌊");
         } else if (wanted === "photo" && canShowPhoto) {
           const theme = currentTheme();
           window.showAlaina(`🖼️ ${theme?.label || "Festival"} photo background on.`);
