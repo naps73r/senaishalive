@@ -1,0 +1,73 @@
+name: Update Alaina Live News
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update-news:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Bahrain News Agency RSS
+        shell: python
+        run: |
+          import json, html, re, urllib.request
+          import xml.etree.ElementTree as ET
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          FEED = "https://api.bna.bh/rss/local-news"
+          OUT = Path("news.json")
+          req = urllib.request.Request(
+              FEED,
+              headers={"User-Agent": "AlainaLive/1.0 (+https://naps73r.github.io/alainalive/)"}
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=25) as response:
+                  raw = response.read()
+              root = ET.fromstring(raw)
+          except Exception as exc:
+              print(f"BNA RSS unavailable; existing news.json preserved: {exc}")
+              raise SystemExit(0)
+
+          def clean(text):
+              text = html.unescape(text or "")
+              text = re.sub(r"<[^>]+>", " ", text)
+              return re.sub(r"\s+", " ", text).strip()
+
+          items = []
+          for node in root.findall(".//item")[:12]:
+              title = clean(node.findtext("title"))
+              if title:
+                  items.append({
+                      "title": title,
+                      "link": clean(node.findtext("link")),
+                      "published": clean(node.findtext("pubDate")),
+                      "description": clean(node.findtext("description"))[:260]
+                  })
+
+          if not items:
+              raise SystemExit(0)
+
+          OUT.write_text(json.dumps({
+              "updated": datetime.now(timezone.utc).isoformat(),
+              "source": "Bahrain News Agency",
+              "feed": FEED,
+              "items": items
+          }, ensure_ascii=False, indent=2), encoding="utf-8")
+
+      - name: Commit changed headlines
+        shell: bash
+        run: |
+          if git diff --quiet -- news.json; then exit 0; fi
+          git config user.name "alaina-live-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add news.json
+          git commit -m "Update Bahrain news headlines"
+          git push
