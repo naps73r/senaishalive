@@ -2714,16 +2714,44 @@
 
 
   
-    /* V7 — optional original animated background */
-    #animatedBackgroundCanvas {
-      display: none;
+    /* ==========================================================
+       V7.4 — Ambient / Festival Photo / Motion backgrounds
+       ========================================================== */
+
+    #animatedBackgroundCanvas,
+    .festival-photo-background {
       position: fixed;
       inset: 0;
       z-index: 0;
       width: 100vw;
       height: 100vh;
+      pointer-events: none;
+    }
+
+    #animatedBackgroundCanvas {
+      display: none;
       background: #00222B;
       filter: blur(4px) contrast(1.06);
+    }
+
+    .festival-photo-background {
+      display: block;
+      opacity: 0;
+      visibility: hidden;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      transform: scale(1.015);
+      transition: opacity .55s ease, visibility .55s ease;
+    }
+
+    .festival-photo-background::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 30%, rgba(4, 18, 24, .05), rgba(4, 17, 23, .35) 58%, rgba(3, 14, 19, .58) 100%),
+        linear-gradient(180deg, rgba(3,16,21,.16), rgba(3,16,21,.42));
       pointer-events: none;
     }
 
@@ -2731,10 +2759,19 @@
       display: block;
     }
 
+    body.photo-background-on .festival-photo-background {
+      opacity: 1;
+      visibility: visible;
+    }
+
     body.animated-background-on::before,
     body.animated-background-on::after,
     body.animated-background-on .ambient-grid,
-    body.animated-background-on .seasonal-decor {
+    body.animated-background-on .seasonal-decor,
+    body.photo-background-on::before,
+    body.photo-background-on::after,
+    body.photo-background-on .ambient-grid,
+    body.photo-background-on .seasonal-decor {
       opacity: 0 !important;
       visibility: hidden !important;
     }
@@ -2744,83 +2781,199 @@
       isolation: isolate;
     }
 
-    body.animated-background-on .app-shell {
+    body.photo-background-on {
+      background: #07171d;
+      isolation: isolate;
+    }
+
+    body.animated-background-on .app-shell,
+    body.photo-background-on .app-shell {
       position: relative;
       z-index: 2;
     }
 
-    .background-toggle {
-      gap: 7px;
+    .background-mode-button {
+      gap: 6px;
+      min-width: 0;
     }
 
-    .background-toggle-track {
-      position: relative;
-      width: 32px;
-      height: 18px;
-      flex: 0 0 auto;
-      border-radius: 999px;
-      background: rgba(255,255,255,.14);
-      box-shadow: inset 0 1px 4px rgba(0,0,0,.25);
-      transition: background .2s ease, box-shadow .2s ease;
+    .background-mode-current-icon {
+      font-size: .9rem;
+      line-height: 1;
     }
 
-    .background-toggle-thumb {
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: rgba(255,255,255,.9);
-      box-shadow: 0 2px 7px rgba(0,0,0,.32);
-      transition: transform .22s cubic-bezier(.2,.75,.2,1), background .2s ease;
-    }
-
-    .background-toggle[aria-checked="true"] .background-toggle-track {
-      background: linear-gradient(90deg, rgba(52,210,220,.86), rgba(103,232,249,.9));
-      box-shadow:
-        0 0 0 1px rgba(103,232,249,.18),
-        0 0 18px rgba(72,218,229,.18),
-        inset 0 1px 4px rgba(0,0,0,.18);
-    }
-
-    .background-toggle[aria-checked="true"] .background-toggle-thumb {
-      transform: translateX(14px);
-      background: #fff;
-    }
-
-    .background-toggle-label {
+    .background-mode-label {
       font-size: .69rem;
-      font-weight: 700;
+      font-weight: 750;
+    }
+
+    .background-mode-chevron {
+      margin-left: -1px;
+      color: rgba(255,255,255,.52);
+      font-size: .72rem;
+      transform: translateY(-1px);
+      transition: transform .18s ease;
+    }
+
+    .background-mode-button[aria-expanded="true"] .background-mode-chevron {
+      transform: translateY(1px) rotate(180deg);
+    }
+
+    .background-mode-menu {
+      position: fixed;
+      z-index: 1300;
+      width: min(248px, calc(100vw - 24px));
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 18px;
+      background: rgba(8, 27, 33, .88);
+      backdrop-filter: blur(28px) saturate(155%);
+      -webkit-backdrop-filter: blur(28px) saturate(155%);
+      box-shadow: 0 24px 70px rgba(0,0,0,.46);
+    }
+
+    .background-mode-menu[hidden] {
+      display: none !important;
+    }
+
+    .background-mode-option {
+      width: 100%;
+      min-height: 49px;
+      display: grid;
+      grid-template-columns: 29px minmax(0,1fr) 20px;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border: 0;
+      border-radius: 12px;
+      color: var(--text);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: background .15s ease, transform .15s ease;
+    }
+
+    .background-mode-option:hover,
+    .background-mode-option:focus-visible {
+      outline: none;
+      background: rgba(255,255,255,.09);
+    }
+
+    .background-mode-option:active {
+      transform: scale(.985);
+    }
+
+    .background-mode-option-icon {
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    .background-mode-option strong,
+    .background-mode-option small {
+      display: block;
+    }
+
+    .background-mode-option strong {
+      font-size: .72rem;
+      line-height: 1.15;
+    }
+
+    .background-mode-option small {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: .58rem;
+      line-height: 1.15;
+    }
+
+    .background-mode-check {
+      opacity: 0;
+      color: var(--accent);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .background-mode-option.active {
+      background: rgba(255,255,255,.08);
+    }
+
+    .background-mode-option.active .background-mode-check {
+      opacity: 1;
+    }
+
+    .background-photo-status {
+      margin: 6px 6px 2px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,.09);
+      color: rgba(235,247,250,.52);
+      font-size: .57rem;
+      line-height: 1.35;
+    }
+
+    .background-photo-credit {
+      display: block;
+      margin: 5px 6px 3px;
+      color: rgba(209,245,249,.72);
+      font-size: .56rem;
+      line-height: 1.3;
+      text-decoration: none;
+    }
+
+    .background-photo-credit:hover {
+      color: #fff;
+      text-decoration: underline;
     }
 
     @media (max-width: 680px) {
-      .background-toggle {
-        width: 42px;
-        min-width: 42px;
-        padding: 0 5px;
+      .background-mode-button {
+        width: 38px;
+        min-width: 38px;
+        padding: 0 6px;
       }
 
-      .background-toggle-track {
-        width: 29px;
-        height: 17px;
+      .background-mode-current-icon {
+        font-size: .92rem;
       }
 
-      .background-toggle-thumb {
-        width: 13px;
-        height: 13px;
-      }
-
-      .background-toggle[aria-checked="true"] .background-toggle-thumb {
-        transform: translateX(12px);
+      .background-mode-menu {
+        width: min(236px, calc(100vw - 20px));
       }
     }
+
 
   </style>
 </head>
 
 <body>
   <canvas id="animatedBackgroundCanvas" aria-hidden="true"></canvas>
+  <div id="festivalPhotoBackground" class="festival-photo-background" aria-hidden="true"></div>
+
+  <div id="backgroundModeMenu" class="background-mode-menu glass" role="menu"
+       aria-label="Background style" hidden>
+    <button class="background-mode-option" type="button" role="menuitemradio"
+            aria-checked="false" data-background-mode="ambient">
+      <span class="background-mode-option-icon">🎨</span>
+      <span><strong>Ambient</strong><small>Seasonal colours & glass</small></span>
+      <span class="background-mode-check">✓</span>
+    </button>
+    <button class="background-mode-option" type="button" role="menuitemradio"
+            aria-checked="false" data-background-mode="photo">
+      <span class="background-mode-option-icon">🖼️</span>
+      <span><strong>Photo</strong><small>Automatic festival wallpaper</small></span>
+      <span class="background-mode-check">✓</span>
+    </button>
+    <button class="background-mode-option" type="button" role="menuitemradio"
+            aria-checked="false" data-background-mode="motion">
+      <span class="background-mode-option-icon">✨</span>
+      <span><strong>Motion</strong><small>Original Alaina particles</small></span>
+      <span class="background-mode-check">✓</span>
+    </button>
+
+    <div id="backgroundPhotoStatus" class="background-photo-status">
+      Photo mode will activate automatically on supported festival days.
+    </div>
+    <a id="backgroundPhotoCredit" class="background-photo-credit" href="#"
+       target="_blank" rel="noopener noreferrer" hidden></a>
+  </div>
   <div class="ambient-grid" aria-hidden="true"></div>
 
   <main class="app-shell">
@@ -2837,12 +2990,12 @@
           <span class="chip-label">Bahrain</span>
         </button>
 
-        <button id="backgroundToggle" class="background-toggle topbar-chip" type="button"
-                role="switch" aria-checked="false" aria-label="Turn animated background on">
-          <span class="background-toggle-track" aria-hidden="true">
-            <span class="background-toggle-thumb"></span>
-          </span>
-          <span class="background-toggle-label chip-label">Motion</span>
+        <button id="backgroundModeButton" class="background-mode-button topbar-chip" type="button"
+                aria-haspopup="menu" aria-expanded="false" aria-controls="backgroundModeMenu"
+                aria-label="Choose background style">
+          <span id="backgroundModeIcon" class="background-mode-current-icon" aria-hidden="true">🎨</span>
+          <span id="backgroundModeLabel" class="background-mode-label chip-label">Ambient</span>
+          <span class="background-mode-chevron chip-label" aria-hidden="true">⌄</span>
         </button>
 
         <div id="themeBadge" class="theme-badge" hidden>
@@ -4352,13 +4505,17 @@
       return { month, day };
     }
 
-    function getHijriParts() {
+    const FESTIVE_LEAD_DAYS = 5;
+    const FESTIVE_TAIL_DAYS = 5;
+    const DAY_MS = 86400000;
+
+    function getHijriParts(date = new Date()) {
       try {
         const parts = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", {
           timeZone: "Asia/Bahrain",
           month: "numeric",
           day: "numeric"
-        }).formatToParts(new Date());
+        }).formatToParts(date);
 
         const month = Number(parts.find(p => p.type === "month")?.value);
         const day = Number(parts.find(p => p.type === "day")?.value);
@@ -4368,72 +4525,183 @@
       }
     }
 
+    function bahrainDayNumber() {
+      const g = bahrainGregorianParts();
+      return Math.floor(Date.UTC(g.year, g.month - 1, g.day) / DAY_MS);
+    }
+
+    function dayNumber(year, month, day) {
+      return Math.floor(Date.UTC(year, month - 1, day) / DAY_MS);
+    }
+
+    function gregorianCandidate(id, label, startYear, startMonth, startDay, endYear, endMonth, endDay, order = 100) {
+      const today = bahrainDayNumber();
+      const start = dayNumber(startYear, startMonth, startDay);
+      const end = dayNumber(endYear, endMonth, endDay);
+
+      if (today < start - FESTIVE_LEAD_DAYS || today > end + FESTIVE_TAIL_DAYS) {
+        return null;
+      }
+
+      const inCore = today >= start && today <= end;
+      const distance = inCore ? 0 : (today < start ? start - today : today - end);
+      const phase = inCore ? "during" : (today < start ? "before" : "after");
+
+      return {
+        id,
+        ...(THEME_DEFS[id] || {}),
+        ...(label ? { label } : {}),
+        festivePhase: phase,
+        festiveDistance: distance,
+        festiveOrder: order
+      };
+    }
+
+    function hijriCandidate(id, label, matcher, order = 100) {
+      // Scan ±5 Gregorian days around today and ask Intl's Umm al-Qura
+      // calendar whether any of those days fall inside the festival's
+      // Hijri core dates. This naturally handles Hijri month/year edges.
+      const now = new Date();
+      const todayBahrain = bahrainGregorianParts(now);
+      const todayUtc = Date.UTC(todayBahrain.year, todayBahrain.month - 1, todayBahrain.day);
+      let best = null;
+
+      for (let offset = -FESTIVE_TAIL_DAYS; offset <= FESTIVE_LEAD_DAYS; offset++) {
+        const probe = new Date(todayUtc + offset * DAY_MS + 12 * 60 * 60 * 1000);
+        const h = getHijriParts(probe);
+        if (!h || !matcher(h)) continue;
+
+        const distance = Math.abs(offset);
+        const phase = offset === 0 ? "during" : (offset > 0 ? "before" : "after");
+
+        if (!best || distance < best.festiveDistance) {
+          best = {
+            id,
+            ...(THEME_DEFS[id] || {}),
+            ...(label ? { label } : {}),
+            festivePhase: phase,
+            festiveDistance: distance,
+            festiveOrder: order
+          };
+        }
+      }
+
+      return best;
+    }
+
+    function chooseFestiveCandidate(candidates) {
+      return candidates
+        .filter(Boolean)
+        .sort((a, b) => {
+          // Actual festival dates always beat nearby pre/post windows.
+          if (a.festiveDistance !== b.festiveDistance) {
+            return a.festiveDistance - b.festiveDistance;
+          }
+          return (a.festiveOrder || 100) - (b.festiveOrder || 100);
+        })[0] || null;
+    }
+
     function dateTheme() {
       const manual = new URLSearchParams(location.search).get("theme");
       if (manual === "off") return null;
-      if (manual && THEME_DEFS[manual]) return { id: manual, ...THEME_DEFS[manual] };
+      if (manual && THEME_DEFS[manual]) {
+        return {
+          id: manual,
+          ...THEME_DEFS[manual],
+          festivePhase: "during",
+          festiveDistance: 0
+        };
+      }
 
       const g = bahrainGregorianParts();
+      const candidates = [];
 
-      // Exact / short Gregorian occasions take priority over month-long themes.
-      if (g.month === 1 && g.day === 26) {
-        return { id: "india", label: "India Republic Day", icon: "✦", marks: THEME_DEFS.india.marks };
-      }
-      if (g.month === 8 && g.day === 15) {
-        return { id: "india", label: "India Independence Day", icon: "✦", marks: THEME_DEFS.india.marks };
-      }
-      if (g.month === 12 && (g.day === 16 || g.day === 17)) {
-        return { id: "bahrain", ...THEME_DEFS.bahrain };
-      }
-      if (g.month === 12 && g.day >= 24 && g.day <= 26) {
-        return { id: "christmas", ...THEME_DEFS.christmas };
-      }
-      if (g.month === 4 && (g.day === 14 || g.day === 15)) {
-        return { id: "vishu", ...THEME_DEFS.vishu };
-      }
+      // Fixed Gregorian occasions. The existing core dates are preserved;
+      // V7.5 simply adds five days of festive lead-in and five days after.
+      candidates.push(
+        gregorianCandidate("india", "India Republic Day",
+          g.year, 1, 26, g.year, 1, 26, 20),
+        gregorianCandidate("india", "India Independence Day",
+          g.year, 8, 15, g.year, 8, 15, 20),
+        gregorianCandidate("bahrain", null,
+          g.year, 12, 16, g.year, 12, 17, 15),
+        gregorianCandidate("christmas", null,
+          g.year, 12, 24, g.year, 12, 26, 30),
+        gregorianCandidate("vishu", null,
+          g.year, 4, 14, g.year, 4, 15, 30)
+      );
 
+      // Easter's previous three-day core (Sat/Sun/Mon) is retained.
       const easter = easterSunday(g.year);
-      if (g.month === easter.month && Math.abs(g.day - easter.day) <= 1) {
-        return { id: "easter", ...THEME_DEFS.easter };
-      }
+      const easterCore = new Date(Date.UTC(g.year, easter.month - 1, easter.day));
+      const easterStart = new Date(easterCore.getTime() - DAY_MS);
+      const easterEnd = new Date(easterCore.getTime() + DAY_MS);
+      candidates.push(
+        gregorianCandidate(
+          "easter", null,
+          easterStart.getUTCFullYear(), easterStart.getUTCMonth() + 1, easterStart.getUTCDate(),
+          easterEnd.getUTCFullYear(), easterEnd.getUTCMonth() + 1, easterEnd.getUTCDate(),
+          30
+        )
+      );
 
+      // Known movable Gregorian dates used by this build.
       if (g.year === 2026) {
         for (const item of MOVABLE_2026) {
-          if (g.md >= item.start && g.md <= item.end) {
-            return { id: item.id, ...THEME_DEFS[item.id] };
-          }
+          const [sm, sd] = item.start.split("-").map(Number);
+          const [em, ed] = item.end.split("-").map(Number);
+          candidates.push(
+            gregorianCandidate(
+              item.id, null,
+              g.year, sm, sd,
+              g.year, em, ed,
+              25
+            )
+          );
         }
       }
 
-      const h = getHijriParts();
-      if (h) {
-        if (h.month === 10 && h.day >= 1 && h.day <= 3) {
-          return { id: "eid", label: "Eid al-Fitr", icon: "✦", marks: THEME_DEFS.eid.marks };
-        }
-        if (h.month === 12 && h.day >= 10 && h.day <= 13) {
-          return { id: "eid", label: "Eid al-Adha", icon: "✦", marks: THEME_DEFS.eid.marks };
-        }
-        if (h.month === 12 && h.day >= 8 && h.day <= 9) {
-          return { id: "hajj", ...THEME_DEFS.hajj };
-        }
-        if (h.month === 1 && h.day >= 1 && h.day <= 10) {
-          return { id: "muharram", ...THEME_DEFS.muharram };
-        }
-        if (h.month === 9) {
-          return { id: "ramadan", ...THEME_DEFS.ramadan };
-        }
-      }
+      // Islamic occasions. Nearest actual core wins when 5-day windows overlap.
+      candidates.push(
+        hijriCandidate(
+          "eid", "Eid al-Fitr",
+          h => h.month === 10 && h.day >= 1 && h.day <= 3,
+          5
+        ),
+        hijriCandidate(
+          "hajj", null,
+          h => h.month === 12 && h.day >= 8 && h.day <= 9,
+          8
+        ),
+        hijriCandidate(
+          "eid", "Eid al-Adha",
+          h => h.month === 12 && h.day >= 10 && h.day <= 13,
+          5
+        ),
+        hijriCandidate(
+          "muharram", null,
+          h => h.month === 1 && h.day >= 1 && h.day <= 10,
+          10
+        ),
+        hijriCandidate(
+          "ramadan", null,
+          h => h.month === 9,
+          12
+        )
+      );
 
-      return null;
+      return chooseFestiveCandidate(candidates);
     }
 
     function applySeasonalTheme() {
       const theme = dateTheme();
       seasonalDecor.innerHTML = "";
+      window.alainaSeasonalTheme = theme || null;
 
       if (!theme) {
         document.body.removeAttribute("data-theme");
         themeBadge.hidden = true;
+        window.dispatchEvent(new CustomEvent("alaina:themechange", { detail: null }));
         return;
       }
 
@@ -4453,7 +4721,16 @@
         seasonalDecor.appendChild(span);
       });
 
-      setTimeout(() => showAlaina(`${theme.icon} ${theme.label} theme is on today.`), 1300);
+      window.dispatchEvent(new CustomEvent("alaina:themechange", { detail: theme }));
+
+      let festiveMessage = `${theme.icon} ${theme.label} theme is on today.`;
+      if (theme.festivePhase === "before" && theme.festiveDistance > 0) {
+        festiveMessage = `${theme.icon} ${theme.label} is ${theme.festiveDistance} day${theme.festiveDistance === 1 ? "" : "s"} away — festive mode is on.`;
+      } else if (theme.festivePhase === "after" && theme.festiveDistance > 0) {
+        festiveMessage = `${theme.icon} Keeping the ${theme.label} cheer going a little longer.`;
+      }
+
+      setTimeout(() => showAlaina(festiveMessage), 1300);
     }
 
     // Theme test helper:
@@ -4471,11 +4748,32 @@
   (() => {
     "use strict";
 
-    const toggle = document.getElementById("backgroundToggle");
+    const modeButton = document.getElementById("backgroundModeButton");
+    const modeMenu = document.getElementById("backgroundModeMenu");
+    const modeIcon = document.getElementById("backgroundModeIcon");
+    const modeLabel = document.getElementById("backgroundModeLabel");
+    const modeOptions = Array.from(document.querySelectorAll("[data-background-mode]"));
+    const photoLayer = document.getElementById("festivalPhotoBackground");
+    const photoStatus = document.getElementById("backgroundPhotoStatus");
+    const photoCredit = document.getElementById("backgroundPhotoCredit");
     const canvas = document.getElementById("animatedBackgroundCanvas");
-    if (!toggle || !canvas || !canvas.getContext) return;
 
-    const STORAGE_KEY = "alainaAnimatedBackground";
+    if (!modeButton || !modeMenu || !photoLayer || !canvas || !canvas.getContext) return;
+
+    const STORAGE_KEY = "alainaBackgroundMode";
+    const LEGACY_MOTION_KEY = "alainaAnimatedBackground";
+    const MANIFEST_URL = "festival-wallpaper.json";
+    const MODE_META = {
+      ambient: { icon: "🎨", label: "Ambient" },
+      photo:   { icon: "🖼️", label: "Photo" },
+      motion:  { icon: "✨", label: "Motion" }
+    };
+
+    let selectedMode = "ambient";
+    let manifest = { wallpapers: {} };
+    let manifestLoaded = false;
+
+    // Particle engine state.
     let ctx = null;
     let particles = [];
     let frame = null;
@@ -4496,10 +4794,6 @@
       }
 
       reset(initial = false) {
-        // Keep particles distributed across the full viewport.
-        // The original Alaina background respawned each particle at a
-        // random Y position; spawning at the bottom caused all particles
-        // to collect there after a few seconds.
         this.x = width * (Math.random() + Math.random()) / 2;
         this.y = rand(0, Math.max(1, height));
         this.r = rand(10, 25);
@@ -4571,7 +4865,7 @@
       frame = requestAnimationFrame(render);
     }
 
-    function start() {
+    function startMotion() {
       if (running) return;
       running = true;
       resizeCanvas();
@@ -4579,7 +4873,7 @@
       frame = requestAnimationFrame(render);
     }
 
-    function stop() {
+    function stopMotion() {
       running = false;
       if (frame) {
         cancelAnimationFrame(frame);
@@ -4588,38 +4882,216 @@
       if (ctx) ctx.clearRect(0, 0, width, height);
     }
 
-    function setEnabled(enabled, persist = true) {
-      const on = Boolean(enabled);
+    function currentTheme() {
+      return window.alainaSeasonalTheme || null;
+    }
 
-      document.body.classList.toggle("animated-background-on", on);
-      toggle.setAttribute("aria-checked", String(on));
-      toggle.setAttribute(
-        "aria-label",
-        on ? "Turn animated background off" : "Turn animated background on"
-      );
+    function currentWallpaper() {
+      const theme = currentTheme();
+      if (!theme || !manifest || !manifest.wallpapers) return null;
+      return manifest.wallpapers[theme.id] || null;
+    }
 
-      if (on) start();
-      else stop();
+    function cacheBust(path) {
+      const stamp = manifest?.updated ? String(manifest.updated).replace(/\D/g, "").slice(0, 14) : "1";
+      return `${path}${path.includes("?") ? "&" : "?"}v=${stamp}`;
+    }
 
-      if (persist) localStorage.setItem(STORAGE_KEY, on ? "1" : "0");
+    function updatePhotoInfo() {
+      const theme = currentTheme();
+      const photo = currentWallpaper();
 
-      if (persist && typeof window.showAlaina === "function") {
-        window.showAlaina(
-          on ? "Original animated background on ✨" : "Seasonal wallpaper restored."
-        );
+      if (!theme) {
+        photoStatus.textContent = "No supported festival is active today. Photo preference will use Ambient until one begins.";
+        photoCredit.hidden = true;
+        photoCredit.removeAttribute("href");
+        return;
+      }
+
+      if (!manifestLoaded) {
+        photoStatus.textContent = `${theme.label}: checking the local festival wallpaper library…`;
+        photoCredit.hidden = true;
+        return;
+      }
+
+      if (!photo || !photo.image) {
+        photoStatus.textContent = `${theme.label}: no cached photo is available yet. Ambient is the safe fallback.`;
+        photoCredit.hidden = true;
+        return;
+      }
+
+      if (theme.festivePhase === "before" && theme.festiveDistance > 0) {
+        photoStatus.textContent = `${theme.label} starts in ${theme.festiveDistance} day${theme.festiveDistance === 1 ? "" : "s"} — festive photo is ready.`;
+      } else if (theme.festivePhase === "after" && theme.festiveDistance > 0) {
+        photoStatus.textContent = `${theme.label} festive photo remains active for the post-festival cheer.`;
+      } else {
+        photoStatus.textContent = `${theme.label}: festival photo is ready.`;
+      }
+      const creator = photo.creator || "Wikimedia contributor";
+      const license = photo.license || "Wikimedia Commons";
+      photoCredit.textContent = `Photo: ${creator} · ${license} · Wikimedia Commons`;
+      if (photo.source_page) {
+        photoCredit.href = photo.source_page;
+        photoCredit.hidden = false;
+      } else {
+        photoCredit.hidden = true;
       }
     }
 
-    toggle.addEventListener("click", () => {
-      setEnabled(toggle.getAttribute("aria-checked") !== "true");
+    function updateMenuState() {
+      const meta = MODE_META[selectedMode] || MODE_META.ambient;
+      modeIcon.textContent = meta.icon;
+      modeLabel.textContent = meta.label;
+
+      modeOptions.forEach(option => {
+        const active = option.dataset.backgroundMode === selectedMode;
+        option.classList.toggle("active", active);
+        option.setAttribute("aria-checked", String(active));
+      });
+
+      updatePhotoInfo();
+    }
+
+    function applySelectedMode({ persist = true, notify = false } = {}) {
+      const wanted = selectedMode;
+      const photo = currentWallpaper();
+      const canShowPhoto = wanted === "photo" && photo && photo.image;
+
+      document.body.classList.toggle("animated-background-on", wanted === "motion");
+      document.body.classList.toggle("photo-background-on", Boolean(canShowPhoto));
+
+      if (wanted === "motion") {
+        startMotion();
+      } else {
+        stopMotion();
+      }
+
+      if (canShowPhoto) {
+        photoLayer.style.backgroundImage = `url("${cacheBust(photo.image).replace(/"/g, "%22")}")`;
+      } else {
+        photoLayer.style.backgroundImage = "";
+      }
+
+      if (persist) {
+        localStorage.setItem(STORAGE_KEY, wanted);
+        // The V7 switch preference is no longer authoritative.
+        localStorage.removeItem(LEGACY_MOTION_KEY);
+      }
+
+      updateMenuState();
+
+      if (notify && typeof window.showAlaina === "function") {
+        if (wanted === "motion") {
+          window.showAlaina("Original animated background on ✨");
+        } else if (wanted === "photo" && canShowPhoto) {
+          const theme = currentTheme();
+          window.showAlaina(`🖼️ ${theme?.label || "Festival"} photo background on.`);
+        } else if (wanted === "photo") {
+          window.showAlaina("No festival photo today — Ambient is showing for now.");
+        } else {
+          window.showAlaina("Seasonal Ambient background restored 🎨");
+        }
+      }
+    }
+
+    function chooseMode(mode, notify = true) {
+      if (!MODE_META[mode]) return;
+      selectedMode = mode;
+      applySelectedMode({ persist: true, notify });
+      closeMenu();
+    }
+
+    function positionMenu() {
+      const rect = modeButton.getBoundingClientRect();
+      const menuWidth = Math.min(248, window.innerWidth - 24);
+      let left = rect.right - menuWidth;
+      left = Math.max(12, Math.min(left, window.innerWidth - menuWidth - 12));
+
+      const estimatedHeight = 214;
+      let top = rect.bottom + 8;
+      if (top + estimatedHeight > window.innerHeight - 10) {
+        top = Math.max(10, rect.top - estimatedHeight - 8);
+      }
+
+      modeMenu.style.left = `${Math.round(left)}px`;
+      modeMenu.style.top = `${Math.round(top)}px`;
+    }
+
+    function openMenu() {
+      positionMenu();
+      modeMenu.hidden = false;
+      modeButton.setAttribute("aria-expanded", "true");
+      updateMenuState();
+      requestAnimationFrame(() => {
+        modeOptions.find(o => o.dataset.backgroundMode === selectedMode)?.focus();
+      });
+    }
+
+    function closeMenu() {
+      modeMenu.hidden = true;
+      modeButton.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleMenu() {
+      if (modeMenu.hidden) openMenu();
+      else closeMenu();
+    }
+
+    async function loadWallpaperManifest() {
+      try {
+        const response = await fetch(`${MANIFEST_URL}?t=${Date.now()}`, {
+          cache: "no-store",
+          headers: { "Accept": "application/json" }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        if (data && typeof data === "object" && data.wallpapers && typeof data.wallpapers === "object") {
+          manifest = data;
+        }
+      } catch (error) {
+        console.warn("Festival wallpaper manifest unavailable:", error);
+      } finally {
+        manifestLoaded = true;
+        applySelectedMode({ persist: false, notify: false });
+      }
+    }
+
+    modeButton.addEventListener("click", event => {
+      event.stopPropagation();
+      toggleMenu();
+    });
+
+    modeOptions.forEach(option => {
+      option.addEventListener("click", () => chooseMode(option.dataset.backgroundMode));
+    });
+
+    document.addEventListener("click", event => {
+      if (!modeMenu.hidden && !modeMenu.contains(event.target) && event.target !== modeButton) {
+        closeMenu();
+      }
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !modeMenu.hidden) {
+        closeMenu();
+        modeButton.focus();
+      }
     });
 
     window.addEventListener("resize", () => {
       if (running) resizeCanvas();
+      if (!modeMenu.hidden) positionMenu();
     });
 
     window.addEventListener("orientationchange", () => {
       if (running) setTimeout(resizeCanvas, 180);
+      if (!modeMenu.hidden) setTimeout(positionMenu, 180);
+    });
+
+    window.addEventListener("alaina:themechange", () => {
+      applySelectedMode({ persist: false, notify: false });
     });
 
     document.addEventListener("visibilitychange", () => {
@@ -4638,8 +5110,21 @@
       if (running) resizeCanvas();
     });
 
-    const saved = localStorage.getItem(STORAGE_KEY);
-    setEnabled(saved === "1", false);
+    const queryMode = new URLSearchParams(location.search).get("bg");
+    const storedMode = localStorage.getItem(STORAGE_KEY);
+    const legacyMotion = localStorage.getItem(LEGACY_MOTION_KEY) === "1";
+
+    if (MODE_META[queryMode]) {
+      selectedMode = queryMode;
+    } else if (MODE_META[storedMode]) {
+      selectedMode = storedMode;
+    } else {
+      selectedMode = legacyMotion ? "motion" : "ambient";
+    }
+
+    applySelectedMode({ persist: false, notify: false });
+    loadWallpaperManifest();
+
   })();
   </script>
 
