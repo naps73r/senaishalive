@@ -55,6 +55,7 @@ jobs:
         shell: python
         run: |
           import html
+          import hashlib
           import json
           import os
           import random
@@ -71,7 +72,7 @@ jobs:
           MANIFEST = Path("festival-wallpaper.json")
 
           USER_AGENT = (
-              "SenaishaLiveFestivalWallpaper/1.2 "
+              "SenaishaLiveFestivalWallpaper/1.3 "
               "(https://github.com/naps73r/senaishalive; "
               "non-commercial radio background cache)"
           )
@@ -430,6 +431,11 @@ jobs:
               target.write_bytes(data)
               return content_type
 
+          def file_version(path):
+              """Short content hash used only for cache invalidation."""
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              return digest[:16]
+
           OUT_DIR.mkdir(parents=True, exist_ok=True)
 
           try:
@@ -551,7 +557,8 @@ jobs:
                   "description": selected["description"],
                   "original_width": selected["width"],
                   "original_height": selected["height"],
-                  "source": "Wikimedia Commons"
+                  "source": "Wikimedia Commons",
+                  "version": file_version(target)
               }
 
               downloaded.append(theme_id)

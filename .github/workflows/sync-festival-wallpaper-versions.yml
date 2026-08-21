@@ -1,0 +1,104 @@
+name: Sync Festival Wallpaper Versions
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "festival-wallpapers/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: festival-wallpaper-version-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Sync image hashes into manifest
+        shell: python
+        run: |
+          import hashlib
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          MANIFEST = Path("festival-wallpaper.json")
+          WALLPAPER_DIR = Path("festival-wallpapers")
+
+          if not MANIFEST.exists():
+              raise SystemExit("festival-wallpaper.json was not found.")
+
+          data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+          wallpapers = data.get("wallpapers")
+
+          if not isinstance(wallpapers, dict):
+              raise SystemExit("Manifest does not contain a wallpapers object.")
+
+          changed = False
+
+          for theme_id, item in wallpapers.items():
+              if not isinstance(item, dict):
+                  continue
+
+              image = item.get("image")
+              if not image:
+                  continue
+
+              path = Path(image)
+
+              # Only version files kept in our local wallpaper directory.
+              try:
+                  path.relative_to(WALLPAPER_DIR)
+              except ValueError:
+                  continue
+
+              if not path.exists() or not path.is_file():
+                  print(f"{theme_id}: referenced image missing: {path}")
+                  continue
+
+              version = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+              old_version = str(item.get("version") or "")
+
+              if old_version != version:
+                  item["version"] = version
+                  changed = True
+                  print(f"{theme_id}: {old_version or '(none)'} -> {version}")
+              else:
+                  print(f"{theme_id}: unchanged ({version})")
+
+          if changed:
+              data["updated"] = datetime.now(timezone.utc).isoformat()
+              MANIFEST.write_text(
+                  json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+                  encoding="utf-8"
+              )
+          else:
+              print("All wallpaper versions are already current.")
+
+      - name: Commit manifest version changes
+        shell: bash
+        run: |
+          git add festival-wallpaper.json
+
+          if git diff --cached --quiet; then
+            echo "No manifest version changes to commit."
+            exit 0
+          fi
+
+          git config user.name "senaisha-live-bot"
+          git config user.email "actions@users.noreply.github.com"
+
+          git commit -m "Sync festival wallpaper cache versions"
+
+          # Another automation may have committed while this job ran.
+          git pull --rebase origin main
+          git push origin main

@@ -4909,8 +4909,18 @@
       return manifest.wallpapers[theme.id] || null;
     }
 
-    function cacheBust(path) {
-      const stamp = manifest?.updated ? String(manifest.updated).replace(/\D/g, "").slice(0, 14) : "1";
+    function cacheBust(path, photo = null) {
+      // V7.7: each wallpaper can carry its own content-derived version.
+      // This means replacing just onam.jpg invalidates only the Onam cache.
+      const perPhotoVersion = photo?.version
+        ? String(photo.version).replace(/[^a-zA-Z0-9_-]/g, "")
+        : "";
+
+      // Older manifest entries may not have a per-photo hash yet. In that
+      // transitional case use a page-load token instead of the old top-level
+      // manifest timestamp, because a manually replaced image can otherwise
+      // remain stuck behind an earlier cached URL.
+      const stamp = perPhotoVersion || String(Date.now());
       return `${path}${path.includes("?") ? "&" : "?"}v=${stamp}`;
     }
 
@@ -4944,14 +4954,17 @@
       } else {
         photoStatus.textContent = `${theme.label}: festival photo is ready.`;
       }
-      const creator = photo.creator || "Wikimedia contributor";
-      const license = photo.license || "Wikimedia Commons";
-      photoCredit.textContent = `Photo: ${creator} · ${license} · Wikimedia Commons`;
+      const creator = photo.creator || (photo.source === "Custom" ? "Custom wallpaper" : "Wikimedia contributor");
+      const license = photo.license || "";
+      const sourceLabel = photo.source || "Wikimedia Commons";
+      photoCredit.textContent = ["Photo: " + creator, license, sourceLabel].filter(Boolean).join(" · ");
       if (photo.source_page) {
         photoCredit.href = photo.source_page;
         photoCredit.hidden = false;
       } else {
-        photoCredit.hidden = true;
+        // Keep non-linked custom credit visible when useful.
+        photoCredit.removeAttribute("href");
+        photoCredit.hidden = !photoCredit.textContent;
       }
     }
 
@@ -4985,7 +4998,7 @@
       }
 
       if (canShowPhoto) {
-        photoLayer.style.backgroundImage = `url("${cacheBust(photo.image).replace(/"/g, "%22")}")`;
+        photoLayer.style.backgroundImage = `url("${cacheBust(photo.image, photo).replace(/"/g, "%22")}")`;
       } else {
         photoLayer.style.backgroundImage = "";
       }
