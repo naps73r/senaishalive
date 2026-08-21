@@ -1,0 +1,4202 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061a20">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <title>Alaina Live</title>
+  <meta name="description" content="Alaina Live — your live radio stations in one beautiful player.">
+
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lobster&family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg: #031a20;
+      --scene-bg:
+        radial-gradient(circle at 15% 20%, rgba(31, 197, 213, .15), transparent 30%),
+        radial-gradient(circle at 84% 15%, rgba(139, 92, 246, .13), transparent 28%),
+        linear-gradient(145deg, #03171c 0%, #04242c 48%, #06151d 100%);
+      --orb-a: rgba(32, 213, 220, .30);
+      --orb-b: rgba(92, 77, 225, .25);
+      --glass: rgba(12, 34, 40, .52);
+      --glass-strong: rgba(10, 27, 33, .72);
+      --glass-soft: rgba(255, 255, 255, .075);
+      --border: rgba(255, 255, 255, .14);
+      --border-strong: rgba(255, 255, 255, .24);
+      --text: #f7fbfc;
+      --muted: rgba(235, 247, 250, .62);
+      --accent: #67e8f9;
+      --accent2: #8b5cf6;
+      --success: #5ee6a8;
+      --danger: #ff7d87;
+      --shadow: 0 28px 90px rgba(0, 0, 0, .42);
+      --radius-xl: 34px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+      color-scheme: dark;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--scene-bg);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+      padding:
+        calc(env(safe-area-inset-top) + 18px)
+        calc(env(safe-area-inset-right) + 18px)
+        calc(env(safe-area-inset-bottom) + 28px)
+        calc(env(safe-area-inset-left) + 18px);
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      z-index: -2;
+      width: 48vw;
+      height: 48vw;
+      min-width: 420px;
+      min-height: 420px;
+      border-radius: 50%;
+      filter: blur(72px);
+      pointer-events: none;
+      opacity: .33;
+      will-change: transform;
+    }
+
+    body::before {
+      left: -16vw;
+      top: 8vh;
+      background: var(--orb-a);
+      animation: driftOne 18s ease-in-out infinite alternate;
+    }
+
+    body::after {
+      right: -18vw;
+      bottom: -12vh;
+      background: var(--orb-b);
+      animation: driftTwo 22s ease-in-out infinite alternate;
+    }
+
+    .ambient-grid {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      opacity: .16;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), transparent 85%);
+    }
+
+    @keyframes driftOne {
+      from { transform: translate3d(0,0,0) scale(1); }
+      to { transform: translate3d(14vw,5vh,0) scale(1.14); }
+    }
+
+    @keyframes driftTwo {
+      from { transform: translate3d(0,0,0) scale(1.06); }
+      to { transform: translate3d(-11vw,-8vh,0) scale(.92); }
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 8px 6px 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-name {
+      font-family: Lobster, cursive;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1;
+      letter-spacing: .01em;
+      text-shadow: 0 5px 28px rgba(255,255,255,.16);
+      white-space: nowrap;
+    }
+
+    .brand-subtitle {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .install-btn {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 15px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text);
+      background: rgba(255,255,255,.08);
+      backdrop-filter: blur(16px) saturate(140%);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .install-btn.visible {
+      display: inline-flex;
+    }
+
+    .glass {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      box-shadow:
+        var(--shadow),
+        inset 0 1px 0 rgba(255,255,255,.10);
+      backdrop-filter: blur(30px) saturate(145%);
+      -webkit-backdrop-filter: blur(30px) saturate(145%);
+    }
+
+    .player-card {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(260px, 330px) 1fr;
+      gap: clamp(26px, 5vw, 58px);
+      align-items: center;
+      padding: clamp(24px, 4vw, 42px);
+      border-radius: var(--radius-xl);
+    }
+
+    .player-card::after {
+      content: "";
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      right: -180px;
+      top: -190px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(103,232,249,.13), transparent 67%);
+      pointer-events: none;
+    }
+
+    .cover-wrap {
+      position: relative;
+      width: min(100%, 310px);
+      aspect-ratio: 1;
+      justify-self: center;
+    }
+
+    .cover-glow {
+      position: absolute;
+      inset: 12%;
+      border-radius: 32%;
+      background: rgba(69, 224, 232, .22);
+      filter: blur(48px);
+      opacity: .7;
+      transform: translateY(16px);
+      pointer-events: none;
+    }
+
+    #coverArt {
+      position: relative;
+      z-index: 1;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 29px;
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow:
+        0 28px 55px rgba(0,0,0,.42),
+        0 2px 0 rgba(255,255,255,.08) inset;
+      background: rgba(255,255,255,.05);
+    }
+
+    .player-panel {
+      min-width: 0;
+      text-align: left;
+      align-self: center;
+      width: 100%;
+      max-width: 680px;
+      height: min(100%, 310px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .player-top {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .player-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.35);
+      box-shadow: 0 0 0 0 rgba(94,230,168,.4);
+      transition: .25s ease;
+    }
+
+    .player-card.is-playing .live-dot {
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(94,230,168,.10);
+    }
+
+    #nowPlayingText {
+      max-width: 680px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: clamp(1.85rem, 4.7vw, 3.95rem);
+      line-height: 1.04;
+      letter-spacing: -.055em;
+      font-weight: 700;
+      margin-bottom: 0;
+    }
+
+    #stationRegion {
+      color: var(--muted);
+      font-size: .96rem;
+      font-weight: 500;
+      min-height: 1.3em;
+    }
+
+    .equalizer-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 0;
+    }
+
+    .equalizer {
+      width: min(430px, 100%);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: clamp(3px, .55vw, 6px);
+      overflow: hidden;
+      padding: 5px 0;
+    }
+
+    .equalizer span {
+      flex: 1;
+      min-width: 3px;
+      max-width: 8px;
+      height: 100%;
+      border-radius: 999px;
+      transform-origin: center;
+      transform: scaleY(.12);
+      opacity: .32;
+      background: linear-gradient(to top, rgba(103,232,249,.55), rgba(255,255,255,.95));
+      transition: transform .09s ease, opacity .25s ease;
+      box-shadow: 0 0 12px rgba(103,232,249,.12);
+    }
+
+    .equalizer.is-playing span {
+      opacity: .95;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      padding: 7px 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255,255,255,.055);
+      font-size: .71rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .status-pill.live {
+      color: #d8fff0;
+      border-color: rgba(94,230,168,.2);
+      background: rgba(94,230,168,.09);
+    }
+
+    .status-pill.error {
+      color: #ffe0e3;
+      border-color: rgba(255,125,135,.25);
+      background: rgba(255,125,135,.10);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .control-btn {
+      display: grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--text);
+      background: rgba(255,255,255,.07);
+      cursor: pointer;
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+    }
+
+    .control-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.12);
+      border-color: var(--border-strong);
+    }
+
+    .control-btn:active {
+      transform: scale(.96);
+    }
+
+    .control-btn.primary {
+      width: 72px;
+      height: 72px;
+      border: 0;
+      color: #04171c;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.98), rgba(197,246,250,.92));
+      box-shadow:
+        0 10px 30px rgba(87,218,228,.18),
+        inset 0 1px 0 rgba(255,255,255,.75);
+    }
+
+    .control-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .control-btn.primary svg {
+      width: 30px;
+      height: 30px;
+    }
+
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 0;
+      max-width: 360px;
+      color: var(--muted);
+    }
+
+    .volume-row svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      flex: 0 0 auto;
+    }
+
+    #volumeSlider {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .stations-section {
+      margin-top: 22px;
+      padding: 24px;
+      border-radius: 30px;
+      background: rgba(7, 25, 31, .38);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(24px) saturate(135%);
+      -webkit-backdrop-filter: blur(24px) saturate(135%);
+      box-shadow: 0 22px 65px rgba(0,0,0,.23);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      padding: 0 2px;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .station-count {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 600;
+    }
+
+    .stations {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .station-card {
+      position: relative;
+      min-width: 0;
+      border: 1px solid transparent;
+      border-radius: 22px;
+      background: rgba(255,255,255,.045);
+      padding: 10px 10px 12px;
+      text-align: left;
+      cursor: pointer;
+      transition:
+        transform .18s ease,
+        border-color .18s ease,
+        background .18s ease,
+        box-shadow .18s ease;
+    }
+
+    .station-card:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.075);
+      border-color: rgba(255,255,255,.09);
+    }
+
+    .station-card.active {
+      background:
+        linear-gradient(180deg, rgba(103,232,249,.12), rgba(255,255,255,.06));
+      border-color: rgba(137,240,247,.42);
+      box-shadow:
+        0 12px 30px rgba(0,0,0,.20),
+        0 0 0 1px rgba(103,232,249,.06) inset;
+    }
+
+    .station-card:active {
+      transform: scale(.98);
+    }
+
+    .station-art {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border-radius: 17px;
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 8px 20px rgba(0,0,0,.20);
+    }
+
+    .station-art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .station-play-indicator {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #06181d;
+      background: rgba(255,255,255,.88);
+      box-shadow: 0 5px 14px rgba(0,0,0,.25);
+      opacity: 0;
+      transform: scale(.84);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .station-card:hover .station-play-indicator,
+    .station-card.active .station-play-indicator {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .station-play-indicator svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+    }
+
+    .station-card.playing .station-play-indicator {
+      background: #dffff1;
+    }
+
+    .station-name {
+      display: block;
+      margin-top: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .82rem;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+
+    .station-meta {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 18px;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 600;
+    }
+
+    .tiny-live {
+      display: none;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(94,230,168,.09);
+    }
+
+    .station-card.playing .tiny-live {
+      display: inline-block;
+    }
+
+    .footer-note {
+      padding: 18px 6px 4px;
+      text-align: center;
+      color: rgba(235,247,250,.38);
+      font-size: .7rem;
+    }
+
+    @media (max-width: 920px) {
+      .player-card {
+        grid-template-columns: minmax(220px, 270px) 1fr;
+        gap: 30px;
+      }
+
+      .stations {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      body {
+        padding:
+          calc(env(safe-area-inset-top) + 12px)
+          calc(env(safe-area-inset-right) + 12px)
+          calc(env(safe-area-inset-bottom) + 22px)
+          calc(env(safe-area-inset-left) + 12px);
+      }
+
+      .topbar {
+        padding: 6px 4px 14px;
+      }
+
+      .brand-subtitle {
+        display: none;
+      }
+
+      .install-btn {
+        width: 44px;
+        height: 44px;
+        justify-content: center;
+        padding: 0;
+      }
+
+      .install-btn span {
+        display: none;
+      }
+
+      .player-card {
+        grid-template-columns: 1fr;
+        gap: 25px;
+        padding: 21px;
+        border-radius: 29px;
+      }
+
+      .cover-wrap {
+        width: min(72vw, 310px);
+      }
+
+      .player-panel {
+        text-align: center;
+      }
+
+      .eyebrow,
+      .controls,
+      .equalizer-wrap {
+        justify-content: center;
+      }
+
+      #nowPlayingText {
+        font-size: clamp(2rem, 10vw, 3.15rem);
+      }
+
+      .equalizer-wrap {
+        margin: 20px 0 18px;
+        flex-wrap: wrap;
+      }
+
+      .equalizer {
+        width: 100%;
+        height: 50px;
+      }
+
+      .volume-row {
+        margin: 20px auto 0;
+      }
+
+      .stations-section {
+        margin-top: 14px;
+        padding: 16px 12px 14px;
+        border-radius: 26px;
+      }
+
+      .stations {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .station-card {
+        border-radius: 18px;
+        padding: 7px 7px 9px;
+      }
+
+      .station-art {
+        border-radius: 14px;
+      }
+
+      .station-play-indicator {
+        width: 29px;
+        height: 29px;
+        right: 6px;
+        bottom: 6px;
+      }
+
+      .station-name {
+        font-size: .72rem;
+        margin-top: 7px;
+      }
+
+      .station-meta {
+        font-size: .61rem;
+      }
+
+      .control-btn {
+        width: 52px;
+        height: 52px;
+      }
+
+      .control-btn.primary {
+        width: 70px;
+        height: 70px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .stations {
+        gap: 7px;
+      }
+
+      .station-card {
+        padding: 6px;
+      }
+
+      .station-name {
+        font-size: .68rem;
+      }
+    }
+
+    /* Echo Show / wide landscape */
+    @media (min-width: 900px) and (max-height: 720px) and (orientation: landscape) {
+      body {
+        padding-top: calc(env(safe-area-inset-top) + 10px);
+        padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
+      }
+
+      .topbar {
+        padding-bottom: 10px;
+      }
+
+      .brand-name {
+        font-size: 2.15rem;
+      }
+
+      .player-card {
+        grid-template-columns: 230px 1fr;
+        padding: 22px 30px;
+        gap: 34px;
+      }
+
+      .cover-wrap {
+        width: 220px;
+      }
+
+      #nowPlayingText {
+        font-size: clamp(2rem, 4.7vw, 3.4rem);
+      }
+
+      .equalizer-wrap {
+        margin: 17px 0 15px;
+      }
+
+      .equalizer {
+        height: 44px;
+      }
+
+      .volume-row {
+        margin-top: 14px;
+      }
+
+      .control-btn {
+        width: 48px;
+        height: 48px;
+      }
+
+      .control-btn.primary {
+        width: 62px;
+        height: 62px;
+      }
+
+      .stations-section {
+        margin-top: 12px;
+        padding: 14px 18px;
+      }
+
+      .section-header {
+        margin-bottom: 10px;
+      }
+
+      .stations {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .station-card {
+        display: grid;
+        grid-template-columns: 50px minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        column-gap: 9px;
+        align-items: center;
+        padding: 7px;
+        border-radius: 15px;
+      }
+
+      .station-art {
+        grid-row: 1 / span 2;
+        width: 50px;
+        border-radius: 11px;
+      }
+
+      .station-name {
+        margin-top: 0;
+        font-size: .7rem;
+      }
+
+      .station-meta {
+        font-size: .58rem;
+      }
+
+      .station-play-indicator {
+        display: none;
+      }
+
+      .footer-note {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+
+      .station-card,
+      .control-btn {
+        transition: none;
+      }
+    }
+
+    @supports not ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
+      .glass,
+      .stations-section,
+      .install-btn {
+        background: rgba(6, 26, 32, .94);
+      }
+    }
+  
+
+    /* ==========================================================
+       ZERO-SCROLL LAYOUT
+       - Mobile: one-screen 3D flip between player and all stations.
+       - Tablet / Echo / wide screens: player above, every station below.
+       ========================================================== */
+
+    body {
+      height: 100vh;
+      height: 100dvh;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
+    .app-shell {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      flex: 0 0 auto;
+    }
+
+    .content-stage {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .player-card,
+    .stations-section {
+      min-height: 0;
+    }
+
+    .player-card {
+      flex: 0 0 min(39%, 350px);
+    }
+
+    .stations-section {
+      flex: 1 1 auto;
+      margin-top: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section-header {
+      flex: 0 0 auto;
+    }
+
+    .stations {
+      flex: 1 1 auto;
+      min-height: 0;
+      grid-auto-rows: minmax(0, 1fr);
+    }
+
+    .footer-note {
+      display: none;
+    }
+
+    .mobile-flip-button,
+    .mobile-back-button {
+      display: none;
+    }
+
+    .section-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Tablet / Echo station cards are intentionally compact so all 12
+       are visible at the same time without vertical scrolling. */
+    @media (min-width: 681px) {
+      .stations {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .station-card {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: clamp(42px, 5.5vw, 66px) minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        column-gap: 9px;
+        align-content: center;
+        align-items: center;
+        padding: 7px;
+        border-radius: 16px;
+      }
+
+      .station-art {
+        grid-row: 1 / span 2;
+        width: clamp(42px, 5.5vw, 66px);
+        height: clamp(42px, 5.5vw, 66px);
+        aspect-ratio: 1;
+        border-radius: 12px;
+      }
+
+      .station-name {
+        align-self: end;
+        margin: 0;
+        font-size: clamp(.66rem, 1vw, .82rem);
+      }
+
+      .station-meta {
+        align-self: start;
+        min-height: 0;
+        margin-top: 2px;
+        font-size: clamp(.54rem, .8vw, .67rem);
+      }
+
+      .station-play-indicator {
+        width: 24px;
+        height: 24px;
+        right: 4px;
+        bottom: 4px;
+      }
+    }
+
+    /* Wide desktop / laptop layout:
+       keep every text/control element from "Now Playing" through the
+       volume slider inside the visual height of the artwork. */
+    @media (min-width: 921px) and (min-height: 700px) {
+      .player-card {
+        flex-basis: min(38%, 345px);
+        padding: 24px 28px;
+        gap: 28px;
+      }
+
+      .cover-wrap {
+        width: min(100%, 295px);
+      }
+
+      .player-panel {
+        height: min(100%, 295px);
+      }
+
+      .equalizer {
+        height: 48px;
+      }
+
+      .controls {
+        gap: 16px;
+      }
+
+      .control-btn {
+        width: 50px;
+        height: 50px;
+      }
+
+      .control-btn.primary {
+        width: 66px;
+        height: 66px;
+      }
+
+      .volume-row {
+        max-width: 330px;
+      }
+    }
+
+    /* Tablet portrait: keep player on top and all stations underneath. */
+    @media (min-width: 681px) and (max-width: 920px) {
+      .stations {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-rows: repeat(3, minmax(0, 1fr));
+      }
+
+      .player-card {
+        flex-basis: min(45%, 390px);
+        padding: clamp(18px, 3vw, 30px);
+        grid-template-columns: minmax(180px, 250px) 1fr;
+        gap: 24px;
+      }
+
+      .cover-wrap {
+        width: min(100%, 235px);
+      }
+
+      .player-panel {
+        height: min(100%, 235px);
+      }
+
+      .equalizer-wrap {
+        margin: 17px 0 16px;
+      }
+
+      .equalizer {
+        height: 42px;
+      }
+
+      .volume-row {
+        margin-top: 14px;
+      }
+    }
+
+    /* Medium-height landscape smart displays / Echo-style screens.
+       The complete right-side player stack is constrained to exactly the
+       same visual height as the artwork, including controls + volume. */
+    @media (min-width: 900px) and (max-height: 860px) {
+      body {
+        padding:
+          calc(env(safe-area-inset-top) + 8px)
+          calc(env(safe-area-inset-right) + 12px)
+          calc(env(safe-area-inset-bottom) + 9px)
+          calc(env(safe-area-inset-left) + 12px);
+      }
+
+      .topbar {
+        padding: 2px 4px 8px;
+      }
+
+      .brand-name {
+        font-size: 2rem;
+      }
+
+      .brand-subtitle {
+        font-size: .66rem;
+      }
+
+      .content-stage {
+        gap: 8px;
+      }
+
+      .player-card {
+        flex: 0 0 42%;
+        grid-template-columns: minmax(175px, 230px) 1fr;
+        align-items: center;
+        gap: 24px;
+        padding: 14px 22px;
+        border-radius: 24px;
+      }
+
+      .cover-wrap {
+        width: min(100%, 210px);
+      }
+
+      .player-panel {
+        width: 100%;
+        height: min(100%, 210px);
+        max-width: none;
+        align-self: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 5px;
+        overflow: visible;
+      }
+
+      .player-top {
+        gap: 1px;
+      }
+
+      .player-bottom {
+        gap: 6px;
+      }
+
+      #coverArt {
+        border-radius: 21px;
+      }
+
+      .eyebrow {
+        margin-bottom: 0;
+        font-size: .58rem;
+      }
+
+      #nowPlayingText {
+        margin-bottom: 0;
+        font-size: clamp(1.65rem, 3.7vw, 2.65rem);
+        line-height: 1;
+      }
+
+      #stationRegion {
+        min-height: 1.1em;
+        font-size: .70rem;
+      }
+
+      .equalizer-wrap {
+        margin: 0;
+        gap: 9px;
+      }
+
+      .equalizer {
+        height: 26px;
+        padding: 2px 0;
+      }
+
+      .status-pill {
+        padding: 4px 7px;
+        font-size: .54rem;
+      }
+
+      .controls {
+        gap: 9px;
+      }
+
+      .control-btn {
+        width: 38px;
+        height: 38px;
+      }
+
+      .control-btn.primary {
+        width: 48px;
+        height: 48px;
+      }
+
+      .control-btn svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      .control-btn.primary svg {
+        width: 21px;
+        height: 21px;
+      }
+
+      .volume-row {
+        display: flex !important;
+        visibility: visible !important;
+        margin-top: 0;
+        max-width: 280px;
+        min-height: 18px;
+        gap: 8px;
+      }
+
+      .volume-row svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      #volumeSlider {
+        display: block !important;
+        visibility: visible !important;
+        height: 18px;
+      }
+
+      .stations-section {
+        padding: 9px 12px;
+        border-radius: 21px;
+      }
+
+      .section-header {
+        margin-bottom: 6px;
+      }
+
+      .section-title {
+        font-size: .83rem;
+      }
+
+      .station-count {
+        font-size: .59rem;
+      }
+
+      .stations {
+        gap: 7px;
+      }
+
+      .station-card {
+        grid-template-columns: 42px minmax(0, 1fr);
+        column-gap: 7px;
+        padding: 5px;
+        border-radius: 12px;
+      }
+
+      .station-art {
+        width: 42px;
+        height: 42px;
+        border-radius: 9px;
+      }
+
+      .station-name {
+        font-size: .60rem;
+      }
+
+      .station-meta {
+        font-size: .49rem;
+      }
+
+      .station-play-indicator {
+        display: none;
+      }
+    }
+
+    /* Very short landscape devices (Echo Show 5 / compact smart displays).
+       The artwork and the complete controls stack remain the same height. */
+    @media (min-width: 681px) and (max-height: 610px) {
+      body {
+        padding:
+          calc(env(safe-area-inset-top) + 6px)
+          calc(env(safe-area-inset-right) + 9px)
+          calc(env(safe-area-inset-bottom) + 7px)
+          calc(env(safe-area-inset-left) + 9px);
+      }
+
+      .topbar {
+        padding: 1px 4px 6px;
+      }
+
+      .brand-name {
+        font-size: 1.72rem;
+      }
+
+      .brand-subtitle {
+        font-size: .58rem;
+      }
+
+      .install-btn {
+        min-height: 34px;
+        padding: 6px 10px;
+      }
+
+      .content-stage {
+        gap: 6px;
+      }
+
+      .player-card {
+        flex: 0 0 48%;
+        grid-template-columns: minmax(130px, 185px) 1fr;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 16px;
+        border-radius: 20px;
+      }
+
+      .cover-wrap {
+        width: min(100%, 168px);
+      }
+
+      .player-panel {
+        width: 100%;
+        height: min(100%, 168px);
+        max-width: none;
+        align-self: center;
+        justify-content: space-between;
+        gap: 3px;
+        overflow: visible;
+      }
+
+      .player-top {
+        gap: 0;
+      }
+
+      .player-bottom {
+        gap: 4px;
+      }
+
+      #coverArt {
+        border-radius: 17px;
+      }
+
+      .eyebrow {
+        margin-bottom: 0;
+        font-size: .52rem;
+      }
+
+      #nowPlayingText {
+        margin-bottom: 0;
+        font-size: clamp(1.25rem, 3.3vw, 2rem);
+        line-height: 1;
+      }
+
+      #stationRegion {
+        min-height: 1em;
+        font-size: .61rem;
+      }
+
+      .equalizer-wrap {
+        margin: 0;
+        gap: 7px;
+      }
+
+      .equalizer {
+        height: 20px;
+        padding: 1px 0;
+      }
+
+      .status-pill {
+        padding: 3px 6px;
+        font-size: .48rem;
+      }
+
+      .controls {
+        gap: 7px;
+      }
+
+      .control-btn {
+        width: 32px;
+        height: 32px;
+      }
+
+      .control-btn.primary {
+        width: 42px;
+        height: 42px;
+      }
+
+      .control-btn svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .control-btn.primary svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .volume-row {
+        display: flex !important;
+        visibility: visible !important;
+        margin-top: 0;
+        max-width: 240px;
+        min-height: 15px;
+        gap: 6px;
+      }
+
+      .volume-row svg {
+        width: 13px;
+        height: 13px;
+      }
+
+      #volumeSlider {
+        display: block !important;
+        visibility: visible !important;
+        height: 15px;
+      }
+
+      .stations-section {
+        padding: 7px 9px;
+        border-radius: 18px;
+      }
+
+      .section-header {
+        margin-bottom: 4px;
+      }
+
+      .section-title {
+        font-size: .74rem;
+      }
+
+      .station-count {
+        font-size: .52rem;
+      }
+
+      .stations {
+        gap: 5px;
+      }
+
+      .station-card {
+        grid-template-columns: 36px minmax(0, 1fr);
+        column-gap: 5px;
+        padding: 4px;
+        border-radius: 10px;
+      }
+
+      .station-art {
+        width: 36px;
+        height: 36px;
+        border-radius: 7px;
+      }
+
+      .station-name {
+        font-size: .53rem;
+      }
+
+      .station-meta {
+        font-size: .44rem;
+      }
+
+      .station-play-indicator {
+        display: none;
+      }
+    }
+
+    /* MOBILE: fixed one-screen 3D flip UI. */
+    @media (max-width: 680px) {
+      body {
+        padding:
+          calc(env(safe-area-inset-top) + 8px)
+          calc(env(safe-area-inset-right) + 9px)
+          calc(env(safe-area-inset-bottom) + 9px)
+          calc(env(safe-area-inset-left) + 9px);
+      }
+
+      .topbar {
+        min-height: 46px;
+        padding: 3px 3px 8px;
+      }
+
+      .brand-name {
+        font-size: clamp(1.75rem, 8vw, 2.25rem);
+      }
+
+      .content-stage {
+        position: relative;
+        display: block;
+        perspective: 1300px;
+        transform-style: preserve-3d;
+      }
+
+      .player-card,
+      .stations-section {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        transform-style: preserve-3d;
+        transition:
+          transform .64s cubic-bezier(.2,.72,.18,1),
+          opacity .25s ease;
+      }
+
+      .player-card {
+        transform: rotateY(0deg);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: clamp(8px, 1.7dvh, 15px);
+        padding: clamp(12px, 2.4dvh, 19px);
+        border-radius: 28px;
+      }
+
+      .stations-section {
+        transform: rotateY(180deg);
+        padding: 10px 9px 9px;
+        border-radius: 28px;
+        background: rgba(10, 30, 36, .66);
+      }
+
+      .content-stage.flipped .player-card {
+        transform: rotateY(-180deg);
+        pointer-events: none;
+      }
+
+      .content-stage.flipped .stations-section {
+        transform: rotateY(0deg);
+        pointer-events: auto;
+      }
+
+      .content-stage:not(.flipped) .stations-section {
+        pointer-events: none;
+      }
+
+      .cover-wrap {
+        flex: 0 0 auto;
+        width: clamp(108px, 27dvh, 178px);
+        max-width: 48vw;
+      }
+
+      #coverArt {
+        border-radius: 22px;
+      }
+
+      .player-panel {
+        width: 100%;
+        min-height: 0;
+        height: auto;
+        max-width: none;
+        gap: 8px;
+      }
+
+      .player-top,
+      .player-bottom {
+        gap: 8px;
+      }
+
+      .eyebrow {
+        justify-content: center;
+        margin-bottom: 5px;
+        font-size: .61rem;
+      }
+
+      #nowPlayingText {
+        margin-bottom: 4px;
+        font-size: clamp(1.45rem, 7.3vw, 2.35rem);
+        line-height: 1.02;
+      }
+
+      #stationRegion {
+        font-size: .72rem;
+      }
+
+      .equalizer-wrap {
+        margin: clamp(8px, 1.5dvh, 13px) 0;
+        gap: 7px;
+        flex-wrap: nowrap;
+      }
+
+      .equalizer {
+        width: min(70%, 280px);
+        height: clamp(25px, 5dvh, 38px);
+      }
+
+      .status-pill {
+        padding: 5px 7px;
+        font-size: .53rem;
+      }
+
+      .controls {
+        gap: 12px;
+      }
+
+      .control-btn {
+        width: clamp(41px, 7.8dvh, 52px);
+        height: clamp(41px, 7.8dvh, 52px);
+      }
+
+      .control-btn.primary {
+        width: clamp(54px, 9.5dvh, 66px);
+        height: clamp(54px, 9.5dvh, 66px);
+      }
+
+      .control-btn svg {
+        width: 19px;
+        height: 19px;
+      }
+
+      .control-btn.primary svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .volume-row {
+        width: min(76%, 280px);
+        margin: clamp(8px, 1.4dvh, 13px) auto 0;
+      }
+
+      .mobile-flip-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 39px;
+        margin: clamp(8px, 1.5dvh, 13px) auto 0;
+        padding: 8px 16px;
+        border: 1px solid rgba(255,255,255,.16);
+        border-radius: 999px;
+        color: var(--text);
+        background: rgba(255,255,255,.085);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+        cursor: pointer;
+      }
+
+      .mobile-flip-button svg {
+        width: 17px;
+        height: 17px;
+        fill: currentColor;
+      }
+
+      .mobile-flip-button span {
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .01em;
+      }
+
+      .section-header {
+        min-height: 39px;
+        align-items: center;
+        margin-bottom: 6px;
+        padding: 0 3px;
+      }
+
+      .section-title {
+        font-size: .89rem;
+      }
+
+      .section-actions {
+        gap: 5px;
+      }
+
+      .station-count {
+        display: none;
+      }
+
+      .mobile-back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 33px;
+        padding: 0 10px;
+        border: 1px solid rgba(255,255,255,.13);
+        border-radius: 999px;
+        color: var(--text);
+        background: rgba(255,255,255,.07);
+        cursor: pointer;
+      }
+
+      .mobile-back-button svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+
+      .mobile-back-button span {
+        font-size: .64rem;
+        font-weight: 700;
+      }
+
+      .stations {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: repeat(4, minmax(0, 1fr));
+        gap: clamp(4px, 1dvh, 8px);
+        height: 100%;
+        min-height: 0;
+      }
+
+      .station-card {
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: 4px 3px;
+        border-radius: 14px;
+        text-align: center;
+      }
+
+      .station-card:hover {
+        transform: none;
+      }
+
+      .station-art {
+        flex: 0 0 auto;
+        width: clamp(43px, 9.5dvh, 68px);
+        height: clamp(43px, 9.5dvh, 68px);
+        border-radius: 12px;
+      }
+
+      .station-name {
+        width: 100%;
+        margin: 3px 0 0;
+        font-size: clamp(.55rem, 2.7vw, .69rem);
+        line-height: 1.05;
+        text-align: center;
+      }
+
+      .station-meta {
+        min-height: 0;
+        margin: 0;
+        font-size: clamp(.45rem, 2.1vw, .57rem);
+        line-height: 1;
+        justify-content: center;
+      }
+
+      .station-play-indicator {
+        width: 22px;
+        height: 22px;
+        right: 3px;
+        bottom: 3px;
+      }
+
+      .station-play-indicator svg {
+        width: 11px;
+        height: 11px;
+      }
+    }
+
+    /* Short phones: preserve the one-screen layout by shrinking artwork,
+       never by introducing a scrollbar. */
+    @media (max-width: 680px) and (max-height: 720px) {
+      .player-card {
+        gap: 7px;
+        padding: 10px;
+      }
+
+      .cover-wrap {
+        width: clamp(96px, 23dvh, 145px);
+      }
+
+      #nowPlayingText {
+        font-size: clamp(1.3rem, 6.7vw, 1.9rem);
+      }
+
+      .equalizer-wrap {
+        margin: 6px 0;
+      }
+
+      .equalizer {
+        height: 24px;
+      }
+
+      .volume-row {
+        margin-top: 6px;
+      }
+
+      .mobile-flip-button {
+        min-height: 34px;
+        margin-top: 6px;
+        padding: 6px 13px;
+      }
+
+      .station-art {
+        width: clamp(39px, 8.3dvh, 58px);
+        height: clamp(39px, 8.3dvh, 58px);
+      }
+
+      .stations {
+        gap: 4px;
+      }
+    }
+
+    @media (max-width: 680px) and (max-height: 590px) {
+      .volume-row {
+        display: none;
+      }
+
+      .cover-wrap {
+        width: clamp(88px, 21dvh, 118px);
+      }
+
+      .equalizer {
+        height: 20px;
+      }
+
+      .control-btn {
+        width: 38px;
+        height: 38px;
+      }
+
+      .control-btn.primary {
+        width: 48px;
+        height: 48px;
+      }
+
+      .station-art {
+        width: 41px;
+        height: 41px;
+      }
+
+      .station-meta {
+        display: none;
+      }
+    }
+
+  
+
+    /* ==========================================================
+       V6 — ALaina Extras + seasonal wallpaper
+       ========================================================== */
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .topbar-chip,
+    .theme-badge {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 7px 11px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      color: var(--text);
+      background: rgba(255,255,255,.065);
+      backdrop-filter: blur(18px) saturate(145%);
+      -webkit-backdrop-filter: blur(18px) saturate(145%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      white-space: nowrap;
+    }
+
+    .topbar-chip {
+      cursor: pointer;
+      transition: background .16s ease, transform .16s ease, border-color .16s ease;
+    }
+
+    .topbar-chip:hover {
+      background: rgba(255,255,255,.11);
+      border-color: rgba(255,255,255,.2);
+      transform: translateY(-1px);
+    }
+
+    .weather-chip {
+      color: rgba(239,252,254,.92);
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    #weatherChipTemp {
+      color: #fff;
+      font-size: .83rem;
+    }
+
+    .hub-sparkle {
+      color: var(--accent);
+      text-shadow: 0 0 14px rgba(103,232,249,.4);
+    }
+
+    .theme-badge {
+      color: rgba(255,255,255,.84);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    .station-card {
+      position: relative;
+    }
+
+    .favorite-toggle {
+      position: absolute;
+      z-index: 4;
+      top: 8px;
+      left: 8px;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 50%;
+      color: rgba(255,255,255,.82);
+      background: rgba(4,18,23,.58);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-size: 14px;
+      line-height: 1;
+      opacity: .78;
+      transition: transform .15s ease, background .15s ease, opacity .15s ease;
+    }
+
+    .favorite-toggle:hover {
+      transform: scale(1.08);
+      opacity: 1;
+    }
+
+    .favorite-toggle.is-favorite {
+      color: #fff;
+      background: rgba(238,76,112,.76);
+      border-color: rgba(255,255,255,.2);
+      opacity: 1;
+    }
+
+    .alaina-toast {
+      position: fixed;
+      z-index: 1200;
+      top: calc(env(safe-area-inset-top) + 64px);
+      left: 50%;
+      max-width: min(520px, calc(100vw - 28px));
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 14px 9px 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      color: rgba(255,255,255,.94);
+      background: rgba(5,24,29,.72);
+      box-shadow: 0 14px 44px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.09);
+      backdrop-filter: blur(24px) saturate(150%);
+      -webkit-backdrop-filter: blur(24px) saturate(150%);
+      transform: translate(-50%, -14px) scale(.96);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease, transform .28s cubic-bezier(.2,.75,.2,1);
+      font-size: .76rem;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .alaina-toast.visible {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+
+    .alaina-toast-mark {
+      width: 25px;
+      height: 25px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      color: #051a20;
+      background: rgba(221,252,255,.94);
+      font-weight: 800;
+    }
+
+    .feature-overlay {
+      position: fixed;
+      z-index: 1100;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+               max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      background: rgba(0,10,14,.44);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .feature-overlay[hidden] {
+      display: none;
+    }
+
+    .feature-sheet {
+      width: min(700px, calc(100vw - 20px));
+      height: min(500px, calc(100dvh - 20px));
+      min-height: 0;
+      overflow: hidden;
+      border-radius: 30px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      background: rgba(8,30,36,.76);
+    }
+
+    .feature-header {
+      flex: 0 0 auto;
+      min-height: 49px;
+      display: grid;
+      grid-template-columns: 38px 1fr 38px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .feature-kicker {
+      color: var(--muted);
+      font-size: .58rem;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    #featureTitle {
+      font-size: 1.25rem;
+      line-height: 1.05;
+      letter-spacing: -.025em;
+    }
+
+    .feature-nav-button,
+    .feature-close-button {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,.11);
+      border-radius: 50%;
+      color: white;
+      background: rgba(255,255,255,.07);
+      cursor: pointer;
+    }
+
+    .feature-nav-button {
+      font-size: 1.55rem;
+      line-height: 1;
+    }
+
+    .feature-close-button {
+      font-size: 1.45rem;
+      line-height: 1;
+    }
+
+    .hub-home,
+    .feature-content {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .hub-home {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .hub-home[hidden],
+    .feature-content[hidden] {
+      display: none;
+    }
+
+    .hub-tile {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-end;
+      gap: 3px;
+      padding: 15px;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 20px;
+      color: white;
+      text-align: left;
+      background: rgba(255,255,255,.055);
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+
+    .hub-tile:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.095);
+      border-color: rgba(255,255,255,.16);
+    }
+
+    .hub-icon {
+      margin-bottom: auto;
+      font-size: 1.65rem;
+    }
+
+    .hub-name {
+      font-size: .8rem;
+      font-weight: 750;
+    }
+
+    .hub-note {
+      color: var(--muted);
+      font-size: .61rem;
+      font-weight: 550;
+    }
+
+    .feature-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .feature-center {
+      width: min(100%, 560px);
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+      min-height: 0;
+    }
+
+    .feature-big-icon {
+      font-size: clamp(2rem, 6vw, 3.1rem);
+      line-height: 1;
+    }
+
+    .feature-primary {
+      font-size: clamp(1.65rem, 5vw, 3rem);
+      line-height: 1;
+      letter-spacing: -.045em;
+      font-weight: 800;
+    }
+
+    .feature-secondary {
+      max-width: 560px;
+      color: rgba(235,247,250,.7);
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
+    .feature-attribution {
+      color: rgba(235,247,250,.42);
+      font-size: .58rem;
+    }
+
+    .feature-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .feature-button {
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 999px;
+      color: white;
+      background: rgba(255,255,255,.07);
+      cursor: pointer;
+      font-size: .68rem;
+      font-weight: 700;
+    }
+
+    .feature-button.primary {
+      color: #06191e;
+      background: rgba(224,252,255,.94);
+      border-color: transparent;
+    }
+
+    .mini-station-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini-station {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 38px minmax(0,1fr);
+      align-items: center;
+      gap: 8px;
+      padding: 7px;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      color: white;
+      background: rgba(255,255,255,.05);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .mini-station img {
+      width: 38px;
+      height: 38px;
+      object-fit: cover;
+      border-radius: 9px;
+    }
+
+    .mini-station span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .64rem;
+      font-weight: 700;
+    }
+
+    .news-card {
+      width: min(100%, 590px);
+      margin: auto;
+      min-height: 0;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 21px;
+      background: rgba(255,255,255,.05);
+      text-align: left;
+    }
+
+    .news-counter {
+      color: var(--muted);
+      font-size: .58rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .news-headline {
+      font-size: clamp(1.15rem, 3.2vw, 1.8rem);
+      line-height: 1.12;
+      letter-spacing: -.03em;
+      font-weight: 760;
+    }
+
+    .news-meta {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .62rem;
+    }
+
+    .sleep-grid {
+      width: min(100%, 470px);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 9px;
+    }
+
+    .sleep-option {
+      min-height: 58px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px;
+      color: white;
+      background: rgba(255,255,255,.055);
+      cursor: pointer;
+      font-weight: 750;
+    }
+
+    .seasonal-decor {
+      position: fixed;
+      z-index: -1;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .seasonal-mark {
+      position: absolute;
+      color: rgba(255,255,255,.12);
+      font-size: clamp(26px, 5vw, 72px);
+      filter: drop-shadow(0 0 22px rgba(255,255,255,.05));
+      animation: seasonalFloat 18s ease-in-out infinite alternate;
+    }
+
+    .seasonal-mark:nth-child(1) { left: 4%; top: 16%; }
+    .seasonal-mark:nth-child(2) { right: 7%; top: 10%; animation-delay: -3s; }
+    .seasonal-mark:nth-child(3) { left: 18%; bottom: 8%; animation-delay: -5s; }
+    .seasonal-mark:nth-child(4) { right: 22%; bottom: 13%; animation-delay: -8s; }
+    .seasonal-mark:nth-child(5) { left: 48%; top: 6%; animation-delay: -11s; }
+    .seasonal-mark:nth-child(6) { right: 43%; bottom: 4%; animation-delay: -14s; }
+
+    @keyframes seasonalFloat {
+      from { transform: translate3d(0,0,0) rotate(-4deg); opacity: .55; }
+      to { transform: translate3d(0,-18px,0) rotate(5deg); opacity: 1; }
+    }
+
+    body[data-theme="ramadan"] {
+      --scene-bg:
+        radial-gradient(circle at 18% 18%, rgba(224,183,73,.13), transparent 26%),
+        radial-gradient(circle at 82% 18%, rgba(87,105,219,.16), transparent 28%),
+        linear-gradient(145deg, #06152b 0%, #0b2440 52%, #081526 100%);
+      --orb-a: rgba(221,176,61,.23);
+      --orb-b: rgba(72,86,190,.26);
+      --accent: #f3d477;
+    }
+
+    body[data-theme="eid"] {
+      --scene-bg:
+        radial-gradient(circle at 15% 20%, rgba(237,202,99,.18), transparent 28%),
+        radial-gradient(circle at 84% 15%, rgba(50,190,131,.16), transparent 28%),
+        linear-gradient(145deg, #06271f 0%, #0a4737 50%, #0a2925 100%);
+      --orb-a: rgba(241,200,85,.25);
+      --orb-b: rgba(57,204,145,.20);
+      --accent: #ffe098;
+    }
+
+    body[data-theme="hajj"] {
+      --scene-bg:
+        radial-gradient(circle at 18% 20%, rgba(205,171,92,.12), transparent 28%),
+        radial-gradient(circle at 83% 18%, rgba(255,255,255,.08), transparent 24%),
+        linear-gradient(145deg, #121514 0%, #242823 52%, #111614 100%);
+      --orb-a: rgba(205,171,92,.16);
+      --orb-b: rgba(255,255,255,.10);
+      --accent: #d6b66d;
+    }
+
+    body[data-theme="muharram"] {
+      --scene-bg:
+        radial-gradient(circle at 18% 18%, rgba(50,89,88,.13), transparent 27%),
+        linear-gradient(145deg, #071112 0%, #111d1e 53%, #080e10 100%);
+      --orb-a: rgba(52,101,96,.15);
+      --orb-b: rgba(101,113,112,.10);
+      --accent: #a9c7c3;
+    }
+
+    body[data-theme="onam"] {
+      --scene-bg:
+        radial-gradient(circle at 12% 18%, rgba(255,182,42,.18), transparent 27%),
+        radial-gradient(circle at 84% 17%, rgba(57,193,104,.18), transparent 26%),
+        linear-gradient(145deg, #15311c 0%, #224a28 48%, #5c4512 100%);
+      --orb-a: rgba(255,183,52,.26);
+      --orb-b: rgba(64,208,112,.22);
+      --accent: #ffd56f;
+    }
+
+    body[data-theme="vishu"] {
+      --scene-bg:
+        radial-gradient(circle at 17% 17%, rgba(253,205,60,.2), transparent 28%),
+        radial-gradient(circle at 83% 20%, rgba(111,181,69,.16), transparent 27%),
+        linear-gradient(145deg, #173217 0%, #435514 48%, #2c2510 100%);
+      --orb-a: rgba(251,209,70,.25);
+      --orb-b: rgba(99,182,76,.19);
+      --accent: #ffe276;
+    }
+
+    body[data-theme="christmas"] {
+      --scene-bg:
+        radial-gradient(circle at 15% 18%, rgba(220,61,79,.17), transparent 28%),
+        radial-gradient(circle at 84% 18%, rgba(65,190,127,.18), transparent 28%),
+        linear-gradient(145deg, #0b2d24 0%, #164b38 48%, #321923 100%);
+      --orb-a: rgba(218,71,87,.22);
+      --orb-b: rgba(79,213,143,.20);
+      --accent: #f3d8a7;
+    }
+
+    body[data-theme="holi"] {
+      --scene-bg:
+        radial-gradient(circle at 13% 20%, rgba(255,76,142,.24), transparent 24%),
+        radial-gradient(circle at 83% 18%, rgba(72,188,255,.24), transparent 24%),
+        radial-gradient(circle at 52% 86%, rgba(255,210,65,.20), transparent 25%),
+        linear-gradient(145deg, #16213c 0%, #37234c 50%, #173b42 100%);
+      --orb-a: rgba(255,93,163,.24);
+      --orb-b: rgba(78,196,255,.23);
+      --accent: #ffe86e;
+    }
+
+    body[data-theme="diwali"] {
+      --scene-bg:
+        radial-gradient(circle at 14% 18%, rgba(255,181,47,.24), transparent 25%),
+        radial-gradient(circle at 84% 16%, rgba(156,85,255,.20), transparent 27%),
+        linear-gradient(145deg, #221232 0%, #3a1f4d 50%, #201124 100%);
+      --orb-a: rgba(255,184,58,.27);
+      --orb-b: rgba(173,102,255,.22);
+      --accent: #ffd76c;
+    }
+
+    body[data-theme="bahrain"] {
+      --scene-bg:
+        radial-gradient(circle at 14% 18%, rgba(218,46,62,.25), transparent 27%),
+        radial-gradient(circle at 84% 20%, rgba(255,255,255,.12), transparent 24%),
+        linear-gradient(145deg, #320b12 0%, #751322 48%, #1f0c13 100%);
+      --orb-a: rgba(232,51,70,.25);
+      --orb-b: rgba(255,255,255,.13);
+      --accent: #fff;
+    }
+
+    body[data-theme="india"] {
+      --scene-bg:
+        radial-gradient(circle at 12% 17%, rgba(255,153,51,.22), transparent 25%),
+        radial-gradient(circle at 84% 18%, rgba(19,136,8,.20), transparent 26%),
+        linear-gradient(145deg, #17283f 0%, #f6f7f1 210%, #0b2715 100%);
+      --orb-a: rgba(255,153,51,.23);
+      --orb-b: rgba(19,136,8,.20);
+      --accent: #ffcc7a;
+    }
+
+    body[data-theme="easter"] {
+      --scene-bg:
+        radial-gradient(circle at 15% 18%, rgba(250,180,211,.18), transparent 27%),
+        radial-gradient(circle at 83% 16%, rgba(162,218,255,.18), transparent 27%),
+        linear-gradient(145deg, #263542 0%, #4a4156 50%, #273c35 100%);
+      --orb-a: rgba(249,182,215,.21);
+      --orb-b: rgba(157,215,255,.18);
+      --accent: #f8d7e8;
+    }
+
+    @media (max-width: 680px) {
+      .topbar {
+        gap: 6px;
+      }
+
+      .topbar-actions {
+        gap: 5px;
+      }
+
+      .topbar-chip {
+        width: 36px;
+        height: 36px;
+        min-height: 36px;
+        padding: 0;
+        gap: 2px;
+      }
+
+      .weather-chip {
+        width: auto;
+        min-width: 50px;
+        padding: 0 8px;
+      }
+
+      .chip-label,
+      .theme-badge,
+      .hub-button .chip-label {
+        display: none;
+      }
+
+      .favorite-toggle {
+        top: 5px;
+        left: 5px;
+        width: 23px;
+        height: 23px;
+        font-size: 12px;
+      }
+
+      .feature-sheet {
+        width: calc(100vw - 14px);
+        height: calc(100dvh - 14px);
+        border-radius: 25px;
+        padding: 12px;
+      }
+
+      .feature-header {
+        min-height: 42px;
+        margin-bottom: 7px;
+      }
+
+      .hub-home {
+        grid-template-columns: repeat(2, minmax(0,1fr));
+        grid-template-rows: repeat(4, minmax(0,1fr));
+        gap: 7px;
+      }
+
+      .hub-tile {
+        padding: 10px;
+        border-radius: 16px;
+      }
+
+      .hub-icon {
+        font-size: 1.3rem;
+      }
+
+      .hub-name {
+        font-size: .69rem;
+      }
+
+      .hub-note {
+        font-size: .53rem;
+      }
+
+      .mini-station-grid {
+        grid-template-columns: repeat(2, minmax(0,1fr));
+        gap: 6px;
+      }
+
+      .sleep-grid {
+        grid-template-columns: repeat(2, minmax(0,1fr));
+      }
+
+      .alaina-toast {
+        top: calc(env(safe-area-inset-top) + 53px);
+        font-size: .68rem;
+      }
+    }
+
+    @media (min-width: 681px) and (max-height: 610px) {
+      .topbar-chip,
+      .theme-badge {
+        min-height: 32px;
+        padding: 5px 9px;
+        font-size: .59rem;
+      }
+
+      .feature-sheet {
+        height: calc(100dvh - 12px);
+        padding: 10px 14px;
+        border-radius: 22px;
+      }
+
+      .feature-header {
+        min-height: 37px;
+        margin-bottom: 6px;
+      }
+
+      .hub-home {
+        gap: 7px;
+      }
+
+      .hub-tile {
+        padding: 9px;
+        border-radius: 14px;
+      }
+
+      .hub-icon {
+        font-size: 1.2rem;
+      }
+
+      .hub-name {
+        font-size: .65rem;
+      }
+
+      .hub-note {
+        font-size: .5rem;
+      }
+
+      .feature-big-icon {
+        font-size: 1.8rem;
+      }
+
+      .feature-primary {
+        font-size: 1.6rem;
+      }
+
+      .feature-secondary {
+        font-size: .68rem;
+      }
+    }
+
+
+  </style>
+</head>
+
+<body>
+  <div class="ambient-grid" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-name">Alaina Live</div>
+        <div class="brand-subtitle">Live Radio</div>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="weatherChip" class="topbar-chip weather-chip" type="button" aria-label="Open Bahrain weather">
+          <span id="weatherChipIcon" aria-hidden="true">☀</span>
+          <span id="weatherChipTemp">--°</span>
+          <span class="chip-label">Bahrain</span>
+        </button>
+
+        <div id="themeBadge" class="theme-badge" hidden>
+          <span id="themeBadgeIcon">✦</span>
+          <span id="themeBadgeText">Seasonal</span>
+        </div>
+
+        <button id="hubButton" class="topbar-chip hub-button" type="button" aria-label="Open Alaina extras">
+          <span class="hub-sparkle" aria-hidden="true">✦</span>
+          <span class="chip-label">Extras</span>
+        </button>
+
+        <button id="installButton" class="install-btn" type="button" aria-label="Install Alaina Live">
+          <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.29V4a1 1 0 0 1 1-1ZM5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/>
+          </svg>
+          <span>Install</span>
+        </button>
+      </div>
+    </header>
+
+    <div id="contentStage" class="content-stage">
+    <section id="playerCard" class="player-card glass" aria-label="Radio player">
+      <div class="cover-wrap">
+        <div class="cover-glow" aria-hidden="true"></div>
+        <img id="coverArt" src="default-cover.jpg" alt="Current station artwork">
+      </div>
+
+      <div class="player-panel">
+        <div class="player-top">
+          <div class="eyebrow">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span id="nowPlayingTextHeader">Now Playing</span>
+          </div>
+
+          <h1 id="nowPlayingText">Alaina Ready!</h1>
+          <p id="stationRegion">Choose a station to begin</p>
+        </div>
+
+        <div class="player-bottom">
+          <div class="equalizer-wrap">
+            <div id="equalizer" class="equalizer" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div id="statusPill" class="status-pill" aria-live="polite">Ready</div>
+          </div>
+
+          <div class="controls" aria-label="Playback controls">
+            <button id="prevButton" class="control-btn" type="button" aria-label="Previous station">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 5h2v14H6V5Zm3.5 7 9-6v12l-9-6Z"/>
+              </svg>
+            </button>
+
+            <button id="playPauseButton" class="control-btn primary" type="button" aria-label="Play">
+              <svg id="playPauseIcon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7L8 5Z"/>
+              </svg>
+            </button>
+
+            <button id="nextButton" class="control-btn" type="button" aria-label="Next station">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M16 5h2v14h-2V5ZM5.5 6v12l9-6-9-6Z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="volume-row" aria-label="Volume">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9v6h4l5 4V5L8 9H4Zm11.5-1.5a1 1 0 0 1 1.4 0 6.36 6.36 0 0 1 0 9 1 1 0 1 1-1.4-1.42 4.36 4.36 0 0 0 0-6.16 1 1 0 0 1 0-1.42Zm2.8-2.8a1 1 0 0 1 1.41 0 10.33 10.33 0 0 1 0 14.6 1 1 0 1 1-1.41-1.42 8.32 8.32 0 0 0 0-11.76 1 1 0 0 1 0-1.42Z"/>
+            </svg>
+            <input id="volumeSlider" type="range" min="0" max="1" value="1" step="0.05" aria-label="Volume">
+          </div>
+        </div>
+
+        <button id="showStationsButton" class="mobile-flip-button" type="button" aria-label="Show all radio stations">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/>
+          </svg>
+          <span>Stations</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="stations-section" aria-label="Stations">
+      <div class="section-header">
+        <div class="section-title">Your Stations</div>
+        <div class="section-actions">
+          <div class="station-count">12 live stations</div>
+          <button id="backToPlayerButton" class="mobile-back-button" type="button" aria-label="Return to player">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15.5 5 8.5 12l7 7-1.5 1.5L5.5 12 14 3.5 15.5 5Z"/>
+            </svg>
+            <span>Player</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="stations">
+        <button class="station-card" type="button"
+          data-src="https://centova.aarenworld.com/proxy/894tamilfm/stream"
+          data-region="UAE" data-region-name="United Arab Emirates" data-name="89.4 Tamil FM"
+          data-art="894.jpg">
+          <span class="station-art">
+            <img src="894.jpg" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">89.4 Tamil FM</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇦🇪 UAE</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://stream.aiir.com/dbv0rxpwp6ytv"
+          data-region="BAH" data-region-name="Bahrain" data-name="107.2 Live FM"
+          data-art="1072.png">
+          <span class="station-art">
+            <img src="1072.png" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">107.2 Live FM</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇧🇭 Bahrain</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://a1.asurahosting.com/listen/radio_suno_87.6fm/radio.mp3"
+          data-region="BAH" data-region-name="Bahrain" data-name="Radio Suno 87.6 FM"
+          data-art="RADIO-SUNO-87.6-logo-01-1.png">
+          <span class="station-art">
+            <img src="RADIO-SUNO-87.6-logo-01-1.png" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Radio Suno</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇧🇭 87.6 FM</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://playerservices.streamtheworld.com/api/livestream-redirect/BAH_HIN_GST.mp3"
+          data-region="BAH" data-region-name="Bahrain" data-name="Radio Mirchi 104.2 FM"
+          data-art="1042.jpg">
+          <span class="station-art">
+            <img src="1042.jpg" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Radio Mirchi</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇧🇭 104.2 FM</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://mbc.thestreamtech.com:8086/index.html/stream"
+          data-region="SL" data-region-name="Sri Lanka" data-name="Shakthi FM SL"
+          data-art="shakthi.png">
+          <span class="station-art">
+            <img src="shakthi.png" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Shakthi FM</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇱🇰 Sri Lanka</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://radio.lotustechnologieslk.net:2020/stream/sooriyanfmgarden"
+          data-region="SL" data-region-name="Sri Lanka" data-name="Sooriyan FM SL"
+          data-art="sooriyanfm.jpg">
+          <span class="station-art">
+            <img src="sooriyanfm.jpg" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Sooriyan FM</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇱🇰 Sri Lanka</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://eu10.fastcast4u.com/clubfmuae"
+          data-region="IND" data-region-name="India" data-name="Radio Mango Kochi"
+          data-art="radio-mango.jpg">
+          <span class="station-art">
+            <img src="radio-mango.jpg" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Radio Mango</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇮🇳 Kochi</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://strw3.openstream.co/1459?aw_0_1st.collectionid%3D4635%26stationId%3D4635%26publisherId%3D1483%26k%3D1764971770"
+          data-region="IND" data-region-name="India" data-name="Club FM Thrissur"
+          data-art="Club-FM.png">
+          <span class="station-art">
+            <img src="Club-FM.png" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Club FM</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇮🇳 Thrissur</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://radios.crabdance.com:8002/3"
+          data-region="IND" data-region-name="India" data-name="Hello FM Kovai"
+          data-art="Hello-FM.png">
+          <span class="station-art">
+            <img src="Hello-FM.png" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Hello FM</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇮🇳 Kovai</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://stream.aiir.com/uejfkn0dchcuv"
+          data-region="BAH" data-region-name="Bahrain" data-name="Radio Bahrain"
+          data-art="radio-bahrain.jpg">
+          <span class="station-art">
+            <img src="radio-bahrain.jpg" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Radio Bahrain</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇧🇭 Bahrain</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://stream.zeno.fm/512rbf1e3qzuv"
+          data-region="UAE" data-region-name="United Arab Emirates" data-name="Asianet 657AM"
+          data-art="Asianet657-AM.png">
+          <span class="station-art">
+            <img src="Asianet657-AM.png" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Asianet 657AM</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇦🇪 UAE</span>
+        </button>
+
+        <button class="station-card" type="button"
+          data-src="https://5c7b683162943.streamlock.net/live/ngrp:radio-106-1_all/chunklist_w1507825078_b981072.m3u8"
+          data-region="BAH" data-region-name="Bahrain" data-name="Quran Bahrain"
+          data-art="1061.png">
+          <span class="station-art">
+            <img src="1061.png" alt="">
+            <span class="station-play-indicator" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg></span>
+          </span>
+          <span class="station-name">Quran Bahrain</span>
+          <span class="station-meta"><span class="tiny-live"></span>🇧🇭 Bahrain</span>
+        </button>
+      </div>
+    </section>
+
+    </div>
+
+    <div class="footer-note">Alaina Live · tap a station and enjoy</div>
+  </main>
+
+
+  <div id="seasonalDecor" class="seasonal-decor" aria-hidden="true"></div>
+
+  <div id="alainaToast" class="alaina-toast" role="status" aria-live="polite">
+    <span class="alaina-toast-mark">♪</span>
+    <span id="alainaToastText">Alaina Live</span>
+  </div>
+
+  <div id="featureOverlay" class="feature-overlay" hidden>
+    <section class="feature-sheet glass" role="dialog" aria-modal="true" aria-labelledby="featureTitle">
+      <header class="feature-header">
+        <button id="featureBackButton" class="feature-nav-button" type="button" aria-label="Back" hidden>‹</button>
+        <div>
+          <div class="feature-kicker">Alaina Live</div>
+          <h2 id="featureTitle">Extras</h2>
+        </div>
+        <button id="featureCloseButton" class="feature-close-button" type="button" aria-label="Close">×</button>
+      </header>
+
+      <div id="hubHome" class="hub-home">
+        <button class="hub-tile" type="button" data-feature="weather">
+          <span class="hub-icon">☀️</span><span class="hub-name">Weather</span><span class="hub-note">Bahrain now</span>
+        </button>
+        <button class="hub-tile" type="button" data-feature="news">
+          <span class="hub-icon">📰</span><span class="hub-name">News</span><span class="hub-note">Bahrain headlines</span>
+        </button>
+        <button class="hub-tile" type="button" data-feature="joke">
+          <span class="hub-icon">😄</span><span class="hub-name">Make me laugh</span><span class="hub-note">Safe jokes</span>
+        </button>
+        <button class="hub-tile" type="button" data-feature="sleep">
+          <span class="hub-icon">😴</span><span class="hub-name">Sleep timer</span><span class="hub-note">Fade out gently</span>
+        </button>
+        <button class="hub-tile" type="button" data-feature="roulette">
+          <span class="hub-icon">🎲</span><span class="hub-name">Surprise me</span><span class="hub-note">Radio roulette</span>
+        </button>
+        <button class="hub-tile" type="button" data-feature="favorites">
+          <span class="hub-icon">♥</span><span class="hub-name">Favorites</span><span class="hub-note">Your saved stations</span>
+        </button>
+        <button class="hub-tile" type="button" data-feature="recent">
+          <span class="hub-icon">↺</span><span class="hub-name">Recently played</span><span class="hub-note">Jump back quickly</span>
+        </button>
+        <button class="hub-tile" type="button" data-feature="today">
+          <span class="hub-icon">📅</span><span class="hub-name">On this day</span><span class="hub-note">A little history</span>
+        </button>
+      </div>
+
+      <div id="featureContent" class="feature-content" hidden></div>
+    </section>
+  </div>
+
+  <audio id="radioPlayer" preload="none" playsinline></audio>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+
+  <script>
+    const audio = document.getElementById("radioPlayer");
+    const stations = Array.from(document.querySelectorAll(".station-card"));
+    const playPauseButton = document.getElementById("playPauseButton");
+    const playPauseIcon = document.getElementById("playPauseIcon");
+    const prevButton = document.getElementById("prevButton");
+    const nextButton = document.getElementById("nextButton");
+    const coverArt = document.getElementById("coverArt");
+    const nowPlayingText = document.getElementById("nowPlayingText");
+    const stationRegion = document.getElementById("stationRegion");
+    const statusPill = document.getElementById("statusPill");
+    const equalizer = document.getElementById("equalizer");
+    const eqBars = Array.from(equalizer.querySelectorAll("span"));
+    const playerCard = document.getElementById("playerCard");
+    const volumeSlider = document.getElementById("volumeSlider");
+    const installButton = document.getElementById("installButton");
+    const contentStage = document.getElementById("contentStage");
+    const showStationsButton = document.getElementById("showStationsButton");
+    const backToPlayerButton = document.getElementById("backToPlayerButton");
+
+    const PLAY_ICON = '<path d="M8 5v14l11-7L8 5Z"/>';
+    const PAUSE_ICON = '<path d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z"/>';
+
+    let currentStationIndex = -1;
+    let hls = null;
+    let deferredPrompt = null;
+    let equalizerTimer = null;
+    let equalizerLevels = eqBars.map(() => 0.12);
+
+    const flagMap = {
+      BAH: "🇧🇭",
+      UAE: "🇦🇪",
+      IND: "🇮🇳",
+      SL: "🇱🇰"
+    };
+
+    function isMobileFlipLayout() {
+      return window.matchMedia("(max-width: 680px)").matches;
+    }
+
+    function setMobileFace(showStations) {
+      if (!contentStage) return;
+      contentStage.classList.toggle("flipped", Boolean(showStations) && isMobileFlipLayout());
+    }
+
+    showStationsButton?.addEventListener("click", () => setMobileFace(true));
+    backToPlayerButton?.addEventListener("click", () => setMobileFace(false));
+
+    window.addEventListener("resize", () => {
+      if (!isMobileFlipLayout()) setMobileFace(false);
+    });
+
+    function setStatus(text, mode = "") {
+      statusPill.textContent = text;
+      statusPill.className = "status-pill";
+      if (mode) statusPill.classList.add(mode);
+    }
+
+    function setPlayVisual(playing) {
+      playPauseIcon.innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
+      playPauseButton.setAttribute("aria-label", playing ? "Pause" : "Play");
+      playerCard.classList.toggle("is-playing", playing);
+      equalizer.classList.toggle("is-playing", playing);
+
+      stations.forEach((station, index) => {
+        station.classList.toggle("playing", playing && index === currentStationIndex);
+      });
+
+      if (playing) {
+        startEqualizer();
+      } else {
+        stopEqualizer();
+      }
+
+      if ("mediaSession" in navigator) {
+        try {
+          navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+        } catch (_) {}
+      }
+    }
+
+    function startEqualizer() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (equalizerTimer) return;
+
+      const tick = () => {
+        const center = (eqBars.length - 1) / 2;
+
+        eqBars.forEach((bar, index) => {
+          const centerBoost = 1 - Math.abs(index - center) / center;
+          const target = 0.17 + Math.random() * (0.50 + centerBoost * 0.28);
+          equalizerLevels[index] = equalizerLevels[index] * 0.42 + target * 0.58;
+          bar.style.transform = `scaleY(${Math.min(1, equalizerLevels[index]).toFixed(3)})`;
+        });
+      };
+
+      tick();
+      equalizerTimer = window.setInterval(tick, 105);
+    }
+
+    function stopEqualizer() {
+      if (equalizerTimer) {
+        clearInterval(equalizerTimer);
+        equalizerTimer = null;
+      }
+
+      eqBars.forEach((bar, index) => {
+        equalizerLevels[index] = 0.12;
+        bar.style.transform = "scaleY(.12)";
+      });
+    }
+
+    function destroyHls() {
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+    }
+
+    function updateMediaSession(card) {
+      if (!("mediaSession" in navigator)) return;
+
+      const stationName = card.dataset.name;
+      const regionName = card.dataset.regionName || "Live Radio";
+      const art = new URL(card.dataset.art, window.location.href).href;
+
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: stationName,
+          artist: `${regionName} · Alaina Live`,
+          album: "Live Radio",
+          artwork: [{ src: art }]
+        });
+      } catch (_) {}
+    }
+
+    function updateSelectedStation(index) {
+      if (index < 0 || index >= stations.length) return;
+
+      currentStationIndex = index;
+      const card = stations[index];
+
+      stations.forEach((station, i) => {
+        station.classList.toggle("active", i === index);
+      });
+
+      const flag = flagMap[card.dataset.region] || "";
+      nowPlayingText.textContent = card.dataset.name;
+      stationRegion.textContent = `${flag} ${card.dataset.regionName || "Live Radio"}`.trim();
+      coverArt.src = card.dataset.art;
+      coverArt.alt = `${card.dataset.name} artwork`;
+      document.title = `${card.dataset.name} | Alaina Live`;
+
+      localStorage.setItem("alainaLastStation", String(index));
+      updateMediaSession(card);
+    }
+
+    async function playCurrentStation() {
+      if (currentStationIndex < 0) {
+        const saved = Number(localStorage.getItem("alainaLastStation"));
+        const index = Number.isInteger(saved) && saved >= 0 && saved < stations.length ? saved : 0;
+        updateSelectedStation(index);
+      }
+
+      const card = stations[currentStationIndex];
+      const streamUrl = card.dataset.src;
+
+      destroyHls();
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+
+      setStatus("Connecting");
+      setPlayVisual(false);
+
+      try {
+        if (/\.m3u8(?:$|\?)/i.test(streamUrl)) {
+          if (window.Hls && Hls.isSupported()) {
+            hls = new Hls({
+              enableWorker: true,
+              lowLatencyMode: false,
+              backBufferLength: 30
+            });
+
+            hls.loadSource(streamUrl);
+            hls.attachMedia(audio);
+
+            hls.on(Hls.Events.MANIFEST_PARSED, async () => {
+              try {
+                await audio.play();
+              } catch (error) {
+                console.warn("Playback needs a user gesture:", error);
+                setStatus("Tap Play");
+              }
+            });
+
+            hls.on(Hls.Events.ERROR, (_, data) => {
+              if (data && data.fatal) {
+                setStatus("Unavailable", "error");
+                setPlayVisual(false);
+              }
+            });
+          } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
+            audio.src = streamUrl;
+            await audio.play();
+          } else {
+            setStatus("Unsupported", "error");
+            return;
+          }
+        } else {
+          audio.src = streamUrl;
+          await audio.play();
+        }
+      } catch (error) {
+        console.error("Station playback failed:", error);
+        setStatus("Unavailable", "error");
+        setPlayVisual(false);
+      }
+    }
+
+    async function selectAndPlay(index) {
+      const sameStation = index === currentStationIndex;
+
+      if (sameStation && !audio.paused && !audio.ended) {
+        audio.pause();
+        return;
+      }
+
+      updateSelectedStation(index);
+
+      if (sameStation && audio.src && audio.paused && !hls) {
+        try {
+          await audio.play();
+          return;
+        } catch (_) {
+          // Fall back to a clean reload below.
+        }
+      }
+
+      await playCurrentStation();
+    }
+
+    function changeStation(direction) {
+      let nextIndex;
+
+      if (currentStationIndex < 0) {
+        nextIndex = direction < 0 ? stations.length - 1 : 0;
+      } else {
+        nextIndex = (currentStationIndex + direction + stations.length) % stations.length;
+      }
+
+      updateSelectedStation(nextIndex);
+      playCurrentStation();
+    }
+
+    stations.forEach((card, index) => {
+      card.addEventListener("click", async () => {
+        await selectAndPlay(index);
+        if (isMobileFlipLayout()) {
+          window.setTimeout(() => setMobileFace(false), 110);
+        }
+      });
+    });
+
+    prevButton.addEventListener("click", () => changeStation(-1));
+    nextButton.addEventListener("click", () => changeStation(1));
+
+    playPauseButton.addEventListener("click", async () => {
+      if (currentStationIndex < 0) {
+        await playCurrentStation();
+        return;
+      }
+
+      if (!audio.paused) {
+        audio.pause();
+        return;
+      }
+
+      if (audio.src || hls) {
+        try {
+          await audio.play();
+        } catch (_) {
+          await playCurrentStation();
+        }
+      } else {
+        await playCurrentStation();
+      }
+    });
+
+    volumeSlider.addEventListener("input", () => {
+      audio.volume = Number(volumeSlider.value);
+      localStorage.setItem("alainaVolume", volumeSlider.value);
+    });
+
+    audio.addEventListener("playing", () => {
+      setStatus("Live", "live");
+      setPlayVisual(true);
+    });
+
+    audio.addEventListener("waiting", () => {
+      setStatus("Buffering");
+    });
+
+    audio.addEventListener("stalled", () => {
+      setStatus("Reconnecting");
+    });
+
+    audio.addEventListener("pause", () => {
+      if (currentStationIndex >= 0 && !audio.ended) {
+        setStatus("Paused");
+      }
+      setPlayVisual(false);
+    });
+
+    audio.addEventListener("error", () => {
+      setStatus("Unavailable", "error");
+      setPlayVisual(false);
+    });
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+      installButton.classList.add("visible");
+    });
+
+    installButton.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      installButton.classList.remove("visible");
+      deferredPrompt.prompt();
+
+      try {
+        await deferredPrompt.userChoice;
+      } finally {
+        deferredPrompt = null;
+      }
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredPrompt = null;
+      installButton.classList.remove("visible");
+    });
+
+    if ("mediaSession" in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler("play", async () => {
+          if (currentStationIndex < 0 || (!audio.src && !hls)) {
+            await playCurrentStation();
+          } else {
+            await audio.play();
+          }
+        });
+
+        navigator.mediaSession.setActionHandler("pause", () => audio.pause());
+        navigator.mediaSession.setActionHandler("previoustrack", () => changeStation(-1));
+        navigator.mediaSession.setActionHandler("nexttrack", () => changeStation(1));
+      } catch (_) {}
+    }
+
+    const savedVolume = Number(localStorage.getItem("alainaVolume"));
+    if (Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1) {
+      audio.volume = savedVolume;
+      volumeSlider.value = String(savedVolume);
+    }
+
+    const savedStation = Number(localStorage.getItem("alainaLastStation"));
+    if (Number.isInteger(savedStation) && savedStation >= 0 && savedStation < stations.length) {
+      updateSelectedStation(savedStation);
+      setStatus("Ready");
+    }
+
+    if ("serviceWorker" in navigator &&
+        (location.hostname === "naps73r.github.io" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js")
+          .catch(error => console.warn("Service worker registration failed:", error));
+      });
+    }
+  </script>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const hubButton = document.getElementById("hubButton");
+    const featureOverlay = document.getElementById("featureOverlay");
+    const featureCloseButton = document.getElementById("featureCloseButton");
+    const featureBackButton = document.getElementById("featureBackButton");
+    const featureTitle = document.getElementById("featureTitle");
+    const hubHome = document.getElementById("hubHome");
+    const featureContent = document.getElementById("featureContent");
+    const weatherChip = document.getElementById("weatherChip");
+    const weatherChipIcon = document.getElementById("weatherChipIcon");
+    const weatherChipTemp = document.getElementById("weatherChipTemp");
+    const themeBadge = document.getElementById("themeBadge");
+    const themeBadgeIcon = document.getElementById("themeBadgeIcon");
+    const themeBadgeText = document.getElementById("themeBadgeText");
+    const seasonalDecor = document.getElementById("seasonalDecor");
+    const alainaToast = document.getElementById("alainaToast");
+    const alainaToastText = document.getElementById("alainaToastText");
+
+    const WEATHER_URL =
+      "https://api.open-meteo.com/v1/forecast" +
+      "?latitude=26.2235&longitude=50.5876" +
+      "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m" +
+      "&daily=temperature_2m_max,temperature_2m_min" +
+      "&timezone=Asia%2FBahrain&forecast_days=2";
+
+    const JOKE_URL =
+      "https://v2.jokeapi.dev/joke/Programming,Misc,Pun" +
+      "?safe-mode&blacklistFlags=nsfw,religious,political,racist,sexist,explicit";
+
+    let weatherData = null;
+    let newsItems = [];
+    let newsIndex = 0;
+    let historyItems = [];
+    let historyIndex = 0;
+    let sleepTimer = null;
+    let sleepTicker = null;
+    let sleepDeadline = null;
+    let toastTimer = null;
+    let switchTimes = [];
+
+    const WEATHER_CODES = {
+      0: ["☀️", "Clear sky"],
+      1: ["🌤️", "Mainly clear"],
+      2: ["⛅", "Partly cloudy"],
+      3: ["☁️", "Overcast"],
+      45: ["🌫️", "Fog"],
+      48: ["🌫️", "Rime fog"],
+      51: ["🌦️", "Light drizzle"],
+      53: ["🌦️", "Drizzle"],
+      55: ["🌧️", "Heavy drizzle"],
+      61: ["🌦️", "Light rain"],
+      63: ["🌧️", "Rain"],
+      65: ["🌧️", "Heavy rain"],
+      80: ["🌦️", "Rain showers"],
+      81: ["🌧️", "Rain showers"],
+      82: ["⛈️", "Heavy showers"],
+      95: ["⛈️", "Thunderstorm"],
+      96: ["⛈️", "Thunderstorm"],
+      99: ["⛈️", "Thunderstorm"]
+    };
+
+    const DJ_LINES = [
+      "New station, new mood 🎶",
+      "Let's see what's playing over here…",
+      "Changing the soundtrack ✨",
+      "A little radio adventure never hurts.",
+      "Okay, this one gets a turn 🎧"
+    ];
+
+    const BUFFER_LINES = [
+      "Tuning the invisible antenna 📡",
+      "One moment… catching the signal.",
+      "Radio waves are doing radio-wave things 😄"
+    ];
+
+    const ERROR_LINES = [
+      "That station may have gone for tea ☕",
+      "The signal escaped. Try again in a moment.",
+      "Hmm… this station is being mysterious today."
+    ];
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function safeHttpUrl(value) {
+      try {
+        const u = new URL(value, window.location.href);
+        return /^https?:$/.test(u.protocol) ? u.href : "";
+      } catch (_) {
+        return "";
+      }
+    }
+
+    function pick(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function showAlaina(message, duration = 3200) {
+      clearTimeout(toastTimer);
+      alainaToastText.textContent = message;
+      alainaToast.classList.add("visible");
+      toastTimer = setTimeout(() => alainaToast.classList.remove("visible"), duration);
+    }
+
+    function greetingMessage() {
+      const hour = Number(new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Bahrain",
+        hour: "2-digit",
+        hour12: false
+      }).format(new Date()));
+
+      if (hour >= 5 && hour < 11) return "Good morning ☀️ Coffee + radio?";
+      if (hour >= 11 && hour < 17) return "Good afternoon 👋 Need some music?";
+      if (hour >= 17 && hour < 23) return "Good evening 🌙 Time to unwind.";
+      return "Still awake? 👀 Alaina Live is too.";
+    }
+
+    function openHub(feature = null) {
+      featureOverlay.hidden = false;
+      document.body.classList.add("feature-open");
+      if (feature) {
+        renderFeature(feature);
+      } else {
+        showHubHome();
+      }
+    }
+
+    function closeHub() {
+      featureOverlay.hidden = true;
+      document.body.classList.remove("feature-open");
+    }
+
+    function showHubHome() {
+      featureTitle.textContent = "Extras";
+      featureBackButton.hidden = true;
+      hubHome.hidden = false;
+      featureContent.hidden = true;
+      featureContent.innerHTML = "";
+    }
+
+    function showFeatureShell(title) {
+      featureTitle.textContent = title;
+      featureBackButton.hidden = false;
+      hubHome.hidden = true;
+      featureContent.hidden = false;
+      featureContent.innerHTML = "";
+    }
+
+    hubButton.addEventListener("click", () => openHub());
+    featureCloseButton.addEventListener("click", closeHub);
+    featureBackButton.addEventListener("click", showHubHome);
+    featureOverlay.addEventListener("click", (event) => {
+      if (event.target === featureOverlay) closeHub();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !featureOverlay.hidden) closeHub();
+    });
+
+    hubHome.querySelectorAll("[data-feature]").forEach(button => {
+      button.addEventListener("click", () => renderFeature(button.dataset.feature));
+    });
+
+    async function fetchWeather() {
+      const cachedRaw = localStorage.getItem("alainaWeather");
+      if (cachedRaw) {
+        try {
+          const cached = JSON.parse(cachedRaw);
+          if (Date.now() - cached.savedAt < 15 * 60 * 1000 && cached.data) {
+            weatherData = cached.data;
+            updateWeatherChip();
+          }
+        } catch (_) {}
+      }
+
+      try {
+        const response = await fetch(WEATHER_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error("Weather HTTP " + response.status);
+        weatherData = await response.json();
+        localStorage.setItem("alainaWeather", JSON.stringify({
+          savedAt: Date.now(),
+          data: weatherData
+        }));
+        updateWeatherChip();
+      } catch (error) {
+        console.warn("Weather unavailable:", error);
+      }
+    }
+
+    function updateWeatherChip() {
+      if (!weatherData?.current) return;
+      const code = WEATHER_CODES[weatherData.current.weather_code] || ["🌤️", "Weather"];
+      weatherChipIcon.textContent = code[0];
+      weatherChipTemp.textContent = `${Math.round(weatherData.current.temperature_2m)}°`;
+      weatherChip.title = `${code[1]} in Bahrain`;
+    }
+
+    weatherChip.addEventListener("click", () => openHub("weather"));
+
+    function renderWeather() {
+      showFeatureShell("Bahrain Weather");
+
+      if (!weatherData?.current) {
+        featureContent.innerHTML = `
+          <div class="feature-center">
+            <div class="feature-big-icon">🌤️</div>
+            <div class="feature-primary">Loading weather…</div>
+            <div class="feature-secondary">Fetching the latest Bahrain conditions.</div>
+          </div>`;
+        fetchWeather().then(() => {
+          if (!featureOverlay.hidden && featureTitle.textContent === "Bahrain Weather") renderWeather();
+        });
+        return;
+      }
+
+      const c = weatherData.current;
+      const daily = weatherData.daily || {};
+      const code = WEATHER_CODES[c.weather_code] || ["🌤️", "Current weather"];
+      const high = daily.temperature_2m_max?.[0];
+      const low = daily.temperature_2m_min?.[0];
+
+      featureContent.innerHTML = `
+        <div class="feature-center">
+          <div class="feature-big-icon">${code[0]}</div>
+          <div class="feature-primary">${Math.round(c.temperature_2m)}°C</div>
+          <div class="feature-secondary">
+            ${escapeHtml(code[1])} · Feels like ${Math.round(c.apparent_temperature)}°C<br>
+            Humidity ${Math.round(c.relative_humidity_2m)}% · Wind ${Math.round(c.wind_speed_10m)} km/h
+            ${Number.isFinite(high) ? `<br>Today ${Math.round(high)}° / ${Math.round(low)}°` : ""}
+          </div>
+          <div class="feature-attribution">Manama, Bahrain · Weather data: Open-Meteo</div>
+        </div>`;
+    }
+
+    async function loadNews() {
+      // Prefer the local file generated by the included GitHub Action.
+      try {
+        const response = await fetch(`news.json?v=${Date.now()}`, { cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data.items) && data.items.length) {
+            newsItems = data.items.slice(0, 10);
+            return newsItems;
+          }
+        }
+      } catch (_) {}
+
+      // If BNA permits browser CORS, this works even before the Action runs.
+      try {
+        const response = await fetch("https://api.bna.bh/rss/local-news", { cache: "no-store" });
+        if (!response.ok) throw new Error("BNA RSS " + response.status);
+        const xmlText = await response.text();
+        const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+        newsItems = Array.from(xml.querySelectorAll("item")).slice(0, 10).map(item => ({
+          title: item.querySelector("title")?.textContent?.trim() || "Bahrain News",
+          link: item.querySelector("link")?.textContent?.trim() || "",
+          published: item.querySelector("pubDate")?.textContent?.trim() || ""
+        }));
+      } catch (error) {
+        console.warn("News feed unavailable:", error);
+      }
+
+      return newsItems;
+    }
+
+    async function renderNews(reset = false) {
+      showFeatureShell("Bahrain Now");
+
+      if (reset) newsIndex = 0;
+
+      if (!newsItems.length) {
+        featureContent.innerHTML = `
+          <div class="feature-center">
+            <div class="feature-big-icon">📰</div>
+            <div class="feature-primary">Loading headlines…</div>
+            <div class="feature-secondary">Bahrain News Agency</div>
+          </div>`;
+        await loadNews();
+      }
+
+      if (!newsItems.length) {
+        featureContent.innerHTML = `
+          <div class="feature-center">
+            <div class="feature-big-icon">📰</div>
+            <div class="feature-primary">Headlines are waking up.</div>
+            <div class="feature-secondary">
+              The included GitHub Action builds <strong>news.json</strong> from Bahrain News Agency RSS.
+              Run it once after publishing V6, then this panel updates automatically.
+            </div>
+            <div class="feature-buttons">
+              <a class="feature-button" href="https://beta.bna.bh/en/latest-news" target="_blank" rel="noopener">Open BNA</a>
+            </div>
+          </div>`;
+        return;
+      }
+
+      newsIndex = (newsIndex + newsItems.length) % newsItems.length;
+      const item = newsItems[newsIndex];
+      const link = safeHttpUrl(item.link);
+      featureContent.innerHTML = `
+        <div class="news-card">
+          <div class="news-counter">BNA · ${newsIndex + 1} / ${newsItems.length}</div>
+          <div class="news-headline">${escapeHtml(item.title)}</div>
+          <div class="news-meta">${escapeHtml(item.published || "Latest Bahrain news")}</div>
+        </div>
+        <div class="feature-buttons">
+          <button id="newsPrev" class="feature-button" type="button">‹ Previous</button>
+          ${link ? `<a class="feature-button" href="${escapeHtml(link)}" target="_blank" rel="noopener">Open story</a>` : ""}
+          <button id="newsNext" class="feature-button primary" type="button">Next ›</button>
+        </div>`;
+
+      document.getElementById("newsPrev")?.addEventListener("click", () => {
+        newsIndex--;
+        renderNews();
+      });
+      document.getElementById("newsNext")?.addEventListener("click", () => {
+        newsIndex++;
+        renderNews();
+      });
+    }
+
+    async function renderJoke() {
+      showFeatureShell("Alaina's Joke");
+
+      featureContent.innerHTML = `
+        <div class="feature-center">
+          <div class="feature-big-icon">😄</div>
+          <div class="feature-primary">Finding something silly…</div>
+        </div>`;
+
+      try {
+        const response = await fetch(JOKE_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error("Joke HTTP " + response.status);
+        const joke = await response.json();
+        let text = "The joke machine got stage fright.";
+        if (!joke.error) {
+          text = joke.type === "twopart"
+            ? `${joke.setup}\n\n${joke.delivery}`
+            : joke.joke;
+        }
+
+        featureContent.innerHTML = `
+          <div class="feature-center">
+            <div class="feature-big-icon">😄</div>
+            <div class="feature-secondary" style="font-size:clamp(.9rem,2.6vw,1.25rem);color:white;white-space:pre-line;">
+              ${escapeHtml(text)}
+            </div>
+            <div class="feature-buttons">
+              <button id="anotherJoke" class="feature-button primary" type="button">Another one</button>
+            </div>
+            <div class="feature-attribution">JokeAPI · safe mode + content filters enabled</div>
+          </div>`;
+        document.getElementById("anotherJoke")?.addEventListener("click", renderJoke);
+      } catch (error) {
+        featureContent.innerHTML = `
+          <div class="feature-center">
+            <div class="feature-big-icon">😅</div>
+            <div class="feature-primary">Even the joke server needs a break.</div>
+            <div class="feature-secondary">Try again in a moment.</div>
+            <button id="anotherJoke" class="feature-button primary" type="button">Try again</button>
+          </div>`;
+        document.getElementById("anotherJoke")?.addEventListener("click", renderJoke);
+      }
+    }
+
+    function stopSleepTimer(showMessage = true) {
+      if (sleepTimer) clearTimeout(sleepTimer);
+      if (sleepTicker) clearInterval(sleepTicker);
+      sleepTimer = null;
+      sleepTicker = null;
+      sleepDeadline = null;
+      localStorage.removeItem("alainaSleepDeadline");
+      if (showMessage) showAlaina("Sleep timer cancelled. Party continues 🎶");
+    }
+
+    function sleepRemainingText() {
+      if (!sleepDeadline) return "Off";
+      const ms = Math.max(0, sleepDeadline - Date.now());
+      const minutes = Math.ceil(ms / 60000);
+      return `${minutes} min remaining`;
+    }
+
+    function startSleepTimer(minutes) {
+      stopSleepTimer(false);
+      const ms = minutes * 60 * 1000;
+      sleepDeadline = Date.now() + ms;
+      localStorage.setItem("alainaSleepDeadline", String(sleepDeadline));
+
+      sleepTimer = setTimeout(() => fadeOutAndPause(), ms);
+      sleepTicker = setInterval(() => {
+        if (!sleepDeadline || Date.now() >= sleepDeadline) {
+          if (sleepTicker) clearInterval(sleepTicker);
+          sleepTicker = null;
+        }
+      }, 30000);
+
+      showAlaina(`Sleep timer set for ${minutes} minutes 😴`);
+      renderSleep();
+    }
+
+    function startEndOfHourSleep() {
+      const now = new Date();
+      const next = new Date(now);
+      next.setMinutes(60, 0, 0);
+      const minutes = Math.max(1, Math.ceil((next - now) / 60000));
+      startSleepTimer(minutes);
+    }
+
+    function fadeOutAndPause() {
+      const originalVolume = audio.volume;
+      let step = 0;
+      const totalSteps = 16;
+      const interval = setInterval(() => {
+        step++;
+        audio.volume = Math.max(0, originalVolume * (1 - step / totalSteps));
+        if (step >= totalSteps) {
+          clearInterval(interval);
+          audio.pause();
+          setTimeout(() => {
+            audio.volume = Number(volumeSlider.value);
+          }, 300);
+          stopSleepTimer(false);
+          showAlaina("Good night 🌙 Alaina has faded the radio out.");
+        }
+      }, 500);
+    }
+
+    function renderSleep() {
+      showFeatureShell("Sleep Timer");
+      featureContent.innerHTML = `
+        <div class="feature-center">
+          <div class="feature-big-icon">😴</div>
+          <div class="feature-primary">${sleepDeadline ? escapeHtml(sleepRemainingText()) : "Choose a timer"}</div>
+          <div class="sleep-grid">
+            <button class="sleep-option" data-sleep="15" type="button">15 min</button>
+            <button class="sleep-option" data-sleep="30" type="button">30 min</button>
+            <button class="sleep-option" data-sleep="45" type="button">45 min</button>
+            <button class="sleep-option" data-sleep="60" type="button">60 min</button>
+            <button class="sleep-option" data-sleep="hour" type="button">End of hour</button>
+            <button class="sleep-option" data-sleep="off" type="button">${sleepDeadline ? "Turn off" : "Off"}</button>
+          </div>
+        </div>`;
+
+      featureContent.querySelectorAll("[data-sleep]").forEach(button => {
+        button.addEventListener("click", () => {
+          const value = button.dataset.sleep;
+          if (value === "off") {
+            stopSleepTimer();
+            renderSleep();
+          } else if (value === "hour") {
+            startEndOfHourSleep();
+          } else {
+            startSleepTimer(Number(value));
+          }
+        });
+      });
+    }
+
+    function getFavoriteIndexes() {
+      try {
+        const values = JSON.parse(localStorage.getItem("alainaFavorites") || "[]");
+        return Array.isArray(values) ? values.filter(Number.isInteger) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function setFavoriteIndexes(values) {
+      const unique = [...new Set(values)].filter(i => i >= 0 && i < stations.length);
+      localStorage.setItem("alainaFavorites", JSON.stringify(unique));
+      syncFavoriteButtons();
+    }
+
+    function toggleFavorite(index) {
+      const values = getFavoriteIndexes();
+      const at = values.indexOf(index);
+      if (at >= 0) {
+        values.splice(at, 1);
+        showAlaina(`${stations[index].dataset.name} removed from favorites.`);
+      } else {
+        values.push(index);
+        showAlaina(`♥ ${stations[index].dataset.name} saved.`);
+      }
+      setFavoriteIndexes(values);
+    }
+
+    function syncFavoriteButtons() {
+      const favorites = new Set(getFavoriteIndexes());
+      stations.forEach((card, index) => {
+        const heart = card.querySelector(".favorite-toggle");
+        if (!heart) return;
+        const active = favorites.has(index);
+        heart.classList.toggle("is-favorite", active);
+        heart.textContent = active ? "♥" : "♡";
+        heart.setAttribute("aria-label", active ? "Remove from favorites" : "Add to favorites");
+      });
+    }
+
+    stations.forEach((card, index) => {
+      const heart = document.createElement("span");
+      heart.className = "favorite-toggle";
+      heart.setAttribute("role", "button");
+      heart.setAttribute("tabindex", "0");
+      heart.textContent = "♡";
+      heart.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleFavorite(index);
+      });
+      heart.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleFavorite(index);
+        }
+      });
+      card.appendChild(heart);
+    });
+    syncFavoriteButtons();
+
+    function getRecentIndexes() {
+      try {
+        const values = JSON.parse(localStorage.getItem("alainaRecent") || "[]");
+        return Array.isArray(values) ? values.filter(Number.isInteger) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function recordRecent(index) {
+      if (!Number.isInteger(index) || index < 0 || index >= stations.length) return;
+      let values = getRecentIndexes().filter(i => i !== index);
+      values.unshift(index);
+      values = values.slice(0, 6);
+      localStorage.setItem("alainaRecent", JSON.stringify(values));
+    }
+
+    function renderStationCollection(title, indexes, emptyText) {
+      showFeatureShell(title);
+
+      if (!indexes.length) {
+        featureContent.innerHTML = `
+          <div class="feature-center">
+            <div class="feature-big-icon">${title === "Favorites" ? "♡" : "↺"}</div>
+            <div class="feature-primary">${escapeHtml(emptyText)}</div>
+            <div class="feature-secondary">Your choices stay on this device.</div>
+          </div>`;
+        return;
+      }
+
+      const cards = indexes.map(index => {
+        const card = stations[index];
+        return `
+          <button class="mini-station" type="button" data-mini-index="${index}">
+            <img src="${escapeHtml(card.dataset.art)}" alt="">
+            <span>${escapeHtml(card.dataset.name)}</span>
+          </button>`;
+      }).join("");
+
+      featureContent.innerHTML = `<div class="mini-station-grid">${cards}</div>`;
+      featureContent.querySelectorAll("[data-mini-index]").forEach(button => {
+        button.addEventListener("click", async () => {
+          const index = Number(button.dataset.miniIndex);
+          closeHub();
+          await selectAndPlay(index);
+          recordRecent(index);
+          if (isMobileFlipLayout()) setMobileFace(false);
+        });
+      });
+    }
+
+    function renderFavorites() {
+      renderStationCollection("Favorites", getFavoriteIndexes(), "No favorites yet");
+    }
+
+    function renderRecent() {
+      renderStationCollection("Recently Played", getRecentIndexes(), "Nothing played yet");
+    }
+
+    function startRoulette() {
+      showFeatureShell("Radio Roulette");
+      featureContent.innerHTML = `
+        <div class="feature-center">
+          <div class="feature-big-icon">🎲</div>
+          <div id="rouletteName" class="feature-primary">Spinning…</div>
+          <div class="feature-secondary">Alaina is making an important musical decision.</div>
+        </div>`;
+
+      const name = document.getElementById("rouletteName");
+      let hops = 0;
+      const target = Math.floor(Math.random() * stations.length);
+
+      const timer = setInterval(() => {
+        const preview = Math.floor(Math.random() * stations.length);
+        name.textContent = stations[preview].dataset.name;
+        hops++;
+
+        if (hops >= 11) {
+          clearInterval(timer);
+          name.textContent = stations[target].dataset.name;
+          setTimeout(async () => {
+            closeHub();
+            showAlaina(`🎲 Radio Roulette picked ${stations[target].dataset.name}!`);
+            await selectAndPlay(target);
+            recordRecent(target);
+            if (isMobileFlipLayout()) setMobileFace(false);
+          }, 450);
+        }
+      }, 95);
+    }
+
+    async function loadOnThisDay() {
+      const nowParts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Bahrain",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(new Date());
+
+      const month = nowParts.find(p => p.type === "month")?.value;
+      const day = nowParts.find(p => p.type === "day")?.value;
+      const url = `https://en.wikipedia.org/api/rest_v1/feed/onthisday/selected/${month}/${day}`;
+
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error("Wikipedia HTTP " + response.status);
+        const data = await response.json();
+        historyItems = Array.isArray(data.selected) ? data.selected : [];
+      } catch (error) {
+        console.warn("On This Day unavailable:", error);
+        historyItems = [];
+      }
+    }
+
+    async function renderToday(reset = false) {
+      showFeatureShell("On This Day");
+      if (reset) historyIndex = 0;
+
+      if (!historyItems.length) {
+        featureContent.innerHTML = `
+          <div class="feature-center">
+            <div class="feature-big-icon">📅</div>
+            <div class="feature-primary">Opening the history book…</div>
+          </div>`;
+        await loadOnThisDay();
+      }
+
+      if (!historyItems.length) {
+        featureContent.innerHTML = `
+          <div class="feature-center">
+            <div class="feature-big-icon">📅</div>
+            <div class="feature-primary">History is being shy today.</div>
+            <div class="feature-secondary">The Wikimedia “On this day” feed is temporarily unavailable.</div>
+          </div>`;
+        return;
+      }
+
+      historyIndex = (historyIndex + historyItems.length) % historyItems.length;
+      const item = historyItems[historyIndex];
+      featureContent.innerHTML = `
+        <div class="feature-center">
+          <div class="feature-big-icon">📅</div>
+          <div class="feature-primary">${escapeHtml(item.year || "Today")}</div>
+          <div class="feature-secondary" style="font-size:clamp(.8rem,2.3vw,1.06rem);color:white;">
+            ${escapeHtml(item.text || "A notable event happened on this day.")}
+          </div>
+          <div class="feature-buttons">
+            <button id="todayPrev" class="feature-button" type="button">‹ Previous</button>
+            <button id="todayNext" class="feature-button primary" type="button">Another ›</button>
+          </div>
+          <div class="feature-attribution">Source: Wikipedia / Wikimedia</div>
+        </div>`;
+
+      document.getElementById("todayPrev")?.addEventListener("click", () => {
+        historyIndex--;
+        renderToday();
+      });
+      document.getElementById("todayNext")?.addEventListener("click", () => {
+        historyIndex++;
+        renderToday();
+      });
+    }
+
+    function renderFeature(feature) {
+      switch (feature) {
+        case "weather": return renderWeather();
+        case "news": return renderNews(true);
+        case "joke": return renderJoke();
+        case "sleep": return renderSleep();
+        case "roulette": return startRoulette();
+        case "favorites": return renderFavorites();
+        case "recent": return renderRecent();
+        case "today": return renderToday(true);
+        default: return showHubHome();
+      }
+    }
+
+    // Record normal station selections without interfering with the existing
+    // station click logic.
+    stations.forEach((card, index) => {
+      card.addEventListener("click", event => {
+        if (event.target.closest(".favorite-toggle")) return;
+        recordRecent(index);
+
+        const now = Date.now();
+        switchTimes = switchTimes.filter(t => now - t < 60000);
+        switchTimes.push(now);
+
+        if (switchTimes.length >= 7) {
+          showAlaina("Okay, we're definitely channel surfing 😂");
+          switchTimes = [];
+        } else {
+          showAlaina(pick(DJ_LINES));
+        }
+      });
+    });
+
+    prevButton.addEventListener("click", () => {
+      setTimeout(() => {
+        recordRecent(currentStationIndex);
+        showAlaina(pick(DJ_LINES));
+      }, 40);
+    });
+
+    nextButton.addEventListener("click", () => {
+      setTimeout(() => {
+        recordRecent(currentStationIndex);
+        showAlaina(pick(DJ_LINES));
+      }, 40);
+    });
+
+    audio.addEventListener("waiting", () => {
+      if (Math.random() < .42) showAlaina(pick(BUFFER_LINES), 2300);
+    });
+
+    audio.addEventListener("stalled", () => {
+      if (Math.random() < .45) showAlaina("Still tuning… the signal is playing hard to get 📡", 2500);
+    });
+
+    audio.addEventListener("error", () => {
+      showAlaina(pick(ERROR_LINES), 3500);
+    });
+
+    // Restore a sleep timer after a refresh, if it is still in the future.
+    const savedSleep = Number(localStorage.getItem("alainaSleepDeadline"));
+    if (Number.isFinite(savedSleep) && savedSleep > Date.now()) {
+      sleepDeadline = savedSleep;
+      sleepTimer = setTimeout(fadeOutAndPause, savedSleep - Date.now());
+    } else {
+      localStorage.removeItem("alainaSleepDeadline");
+    }
+
+    // ---------------------------------------------------------------
+    // Seasonal wallpapers.
+    // Fixed-date events repeat every year. 2026 movable Hindu festivals
+    // are included below. Islamic observances are detected dynamically
+    // using the browser's Umm al-Qura calendar support.
+    // ---------------------------------------------------------------
+    const THEME_DEFS = {
+      ramadan: { label: "Ramadan", icon: "☾", marks: ["☾","✦","☾","✦","✧","☾"] },
+      eid: { label: "Eid Mubarak", icon: "✦", marks: ["✦","◇","✧","✦","◇","✦"] },
+      hajj: { label: "Hajj", icon: "◇", marks: ["◇","✧","◇","✦","◇","✧"] },
+      muharram: { label: "Muharram", icon: "✦", marks: ["✦","·","✧","·","✦","·"] },
+      onam: { label: "Onam", icon: "✿", marks: ["✿","❀","✿","❁","✿","❀"] },
+      vishu: { label: "Vishu", icon: "✦", marks: ["✦","❋","✧","❋","✦","❋"] },
+      christmas: { label: "Christmas", icon: "❄", marks: ["❄","✦","❄","✧","❄","✦"] },
+      holi: { label: "Holi", icon: "●", marks: ["●","●","●","●","●","●"] },
+      diwali: { label: "Diwali", icon: "✦", marks: ["✦","◆","✧","✦","◆","✧"] },
+      bahrain: { label: "Bahrain National Day", icon: "◆", marks: ["◆","✦","◆","✧","◆","✦"] },
+      india: { label: "India", icon: "✦", marks: ["✦","◆","✧","✦","◆","✧"] },
+      easter: { label: "Easter", icon: "✿", marks: ["✿","✧","❀","✦","✿","✧"] }
+    };
+
+    const MOVABLE_2026 = [
+      { id: "holi", start: "03-03", end: "03-04" },
+      { id: "onam", start: "08-25", end: "08-27" },
+      { id: "diwali", start: "11-07", end: "11-09" }
+    ];
+
+    function bahrainGregorianParts(date = new Date()) {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Bahrain",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(date);
+
+      const get = type => parts.find(p => p.type === type)?.value;
+      return {
+        year: Number(get("year")),
+        month: Number(get("month")),
+        day: Number(get("day")),
+        md: `${get("month")}-${get("day")}`
+      };
+    }
+
+    function easterSunday(year) {
+      // Anonymous Gregorian computus.
+      const a = year % 19;
+      const b = Math.floor(year / 100);
+      const c = year % 100;
+      const d = Math.floor(b / 4);
+      const e = b % 4;
+      const f = Math.floor((b + 8) / 25);
+      const g = Math.floor((b - f + 1) / 3);
+      const h = (19 * a + b - d - g + 15) % 30;
+      const i = Math.floor(c / 4);
+      const k = c % 4;
+      const l = (32 + 2 * e + 2 * i - h - k) % 7;
+      const m = Math.floor((a + 11 * h + 22 * l) / 451);
+      const month = Math.floor((h + l - 7 * m + 114) / 31);
+      const day = ((h + l - 7 * m + 114) % 31) + 1;
+      return { month, day };
+    }
+
+    function getHijriParts() {
+      try {
+        const parts = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", {
+          timeZone: "Asia/Bahrain",
+          month: "numeric",
+          day: "numeric"
+        }).formatToParts(new Date());
+
+        const month = Number(parts.find(p => p.type === "month")?.value);
+        const day = Number(parts.find(p => p.type === "day")?.value);
+        return { month, day };
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function dateTheme() {
+      const manual = new URLSearchParams(location.search).get("theme");
+      if (manual === "off") return null;
+      if (manual && THEME_DEFS[manual]) return { id: manual, ...THEME_DEFS[manual] };
+
+      const g = bahrainGregorianParts();
+
+      // Exact / short Gregorian occasions take priority over month-long themes.
+      if (g.month === 1 && g.day === 26) {
+        return { id: "india", label: "India Republic Day", icon: "✦", marks: THEME_DEFS.india.marks };
+      }
+      if (g.month === 8 && g.day === 15) {
+        return { id: "india", label: "India Independence Day", icon: "✦", marks: THEME_DEFS.india.marks };
+      }
+      if (g.month === 12 && (g.day === 16 || g.day === 17)) {
+        return { id: "bahrain", ...THEME_DEFS.bahrain };
+      }
+      if (g.month === 12 && g.day >= 24 && g.day <= 26) {
+        return { id: "christmas", ...THEME_DEFS.christmas };
+      }
+      if (g.month === 4 && (g.day === 14 || g.day === 15)) {
+        return { id: "vishu", ...THEME_DEFS.vishu };
+      }
+
+      const easter = easterSunday(g.year);
+      if (g.month === easter.month && Math.abs(g.day - easter.day) <= 1) {
+        return { id: "easter", ...THEME_DEFS.easter };
+      }
+
+      if (g.year === 2026) {
+        for (const item of MOVABLE_2026) {
+          if (g.md >= item.start && g.md <= item.end) {
+            return { id: item.id, ...THEME_DEFS[item.id] };
+          }
+        }
+      }
+
+      const h = getHijriParts();
+      if (h) {
+        if (h.month === 10 && h.day >= 1 && h.day <= 3) {
+          return { id: "eid", label: "Eid al-Fitr", icon: "✦", marks: THEME_DEFS.eid.marks };
+        }
+        if (h.month === 12 && h.day >= 10 && h.day <= 13) {
+          return { id: "eid", label: "Eid al-Adha", icon: "✦", marks: THEME_DEFS.eid.marks };
+        }
+        if (h.month === 12 && h.day >= 8 && h.day <= 9) {
+          return { id: "hajj", ...THEME_DEFS.hajj };
+        }
+        if (h.month === 1 && h.day >= 1 && h.day <= 10) {
+          return { id: "muharram", ...THEME_DEFS.muharram };
+        }
+        if (h.month === 9) {
+          return { id: "ramadan", ...THEME_DEFS.ramadan };
+        }
+      }
+
+      return null;
+    }
+
+    function applySeasonalTheme() {
+      const theme = dateTheme();
+      seasonalDecor.innerHTML = "";
+
+      if (!theme) {
+        document.body.removeAttribute("data-theme");
+        themeBadge.hidden = true;
+        return;
+      }
+
+      document.body.dataset.theme = theme.id;
+      themeBadge.hidden = false;
+      themeBadgeIcon.textContent = theme.icon;
+      themeBadgeText.textContent = theme.label;
+
+      const themeColor = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+      const themeMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeMeta && themeColor) themeMeta.setAttribute("content", themeColor);
+
+      (theme.marks || []).slice(0, 6).forEach(mark => {
+        const span = document.createElement("span");
+        span.className = "seasonal-mark";
+        span.textContent = mark;
+        seasonalDecor.appendChild(span);
+      });
+
+      setTimeout(() => showAlaina(`${theme.icon} ${theme.label} theme is on today.`), 1300);
+    }
+
+    // Theme test helper:
+    // ?theme=ramadan / eid / hajj / muharram / onam / vishu /
+    // christmas / holi / diwali / bahrain / india / easter
+    applySeasonalTheme();
+    fetchWeather();
+    setTimeout(() => showAlaina(greetingMessage()), 900);
+
+  })();
+  </script>
+
+</body>
+</html>
