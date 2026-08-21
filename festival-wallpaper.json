@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-21T22:18:00+00:00",
+  "updated": "2026-08-21T22:24:00.269132+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -14,7 +14,8 @@
       "description": "Onam Week Celebration",
       "original_width": 6016,
       "original_height": 4016,
-      "source": "Wikimedia Commons"
+      "source": "Wikimedia Commons",
+      "version": "eb8c9bb82da06872"
     },
     "diwali": {
       "label": "Diwali",
@@ -27,7 +28,8 @@
       "description": "Diyas for Divali Deepavali",
       "original_width": 5616,
       "original_height": 3744,
-      "source": "Wikimedia Commons"
+      "source": "Wikimedia Commons",
+      "version": "50d80ae874bb1ef8"
     }
   }
 }
