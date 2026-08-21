@@ -1,6 +1,20 @@
 {
-  "updated": null,
+  "updated": "2026-08-21T22:04:07.737459+00:00",
   "source": "Wikimedia Commons",
-  "note": "Automatically maintained by .github/workflows/update-festival-wallpaper.yml",
-  "wallpapers": {}
+  "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
+  "wallpapers": {
+    "onam": {
+      "label": "Onam",
+      "image": "festival-wallpapers/onam.jpg",
+      "creator": "Santhosh Notagar99",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Onam_-_Pookalam_Competition_in_St_Aloysius_College_01.jpg",
+      "source_title": "File:Onam - Pookalam Competition in St Aloysius College 01.jpg",
+      "description": "Onam Week Celebration",
+      "original_width": 6016,
+      "original_height": 4016,
+      "source": "Wikimedia Commons"
+    }
+  }
 }
