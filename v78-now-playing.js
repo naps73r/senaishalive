@@ -67,10 +67,11 @@
       slug: "mirchi",
       match: ["Radio Mirchi 104.2 FM"],
       aliases: ["radio mirchi", "mirchi", "mirchi bahrain", "104.2", "mirchi 104.2"],
-      metadata: {
-        type: "triton",
-        mount: "BAH_HIN_GST"
-      }
+      // V7.8.1: the public Triton history endpoint for this mount was
+      // producing a title that did not match the actual live audio.
+      // Wrong metadata is worse than no metadata, so keep it disabled until
+      // we verify a true live cue feed for the Bahrain stream.
+      metadataDisabledReason: "Live title disabled — Mirchi metadata did not match the audio."
     },
     {
       slug: "shakthi",
@@ -619,8 +620,13 @@
       return;
     }
 
+    if (activeConfig?.metadataDisabledReason) {
+      setTrackUnavailable(activeConfig.metadataDisabledReason);
+      return;
+    }
+
     if (!activeConfig?.metadata) {
-      setTrackUnavailable("This station does not expose a metadata feed yet");
+      setTrackUnavailable("This station does not expose a reliable metadata feed yet");
       return;
     }
 
@@ -775,10 +781,27 @@
   });
 
   // ------------------------------------------------------------
-  // Song identification handoff.
+  // Song identification handoff — V7.8.1
   // ------------------------------------------------------------
+  // A normal browser cannot directly trigger Shazam's listening screen on
+  // Android/iOS. Chrome can launch an external app only when that app exposes
+  // a browser-resolvable (BROWSABLE) activity/deep link. Shazam does not
+  // publish a supported browser deep link for "start recognition".
+  //
+  // V7.8 used an undocumented Android START_TAGGING intent. On current Shazam
+  // builds that intent is not browser-resolvable, so Chrome correctly falls
+  // back to the website. V7.8.1 removes that misleading behavior.
   function isAndroid() {
     return /Android/i.test(navigator.userAgent);
+  }
+
+  function isSamsungAndroid() {
+    const ua = navigator.userAgent || "";
+    return /Android/i.test(ua) && (
+      /SamsungBrowser/i.test(ua) ||
+      /\bSM-[A-Z0-9-]+/i.test(ua) ||
+      /\bSAMSUNG\b/i.test(ua)
+    );
   }
 
   function isAppleMobile() {
@@ -793,14 +816,14 @@
       const artistLine = currentTrack.artist
         ? `<p><strong>${escapeForSheet(currentTrack.title)}</strong><br>${escapeForSheet(currentTrack.artist)}</p>`
         : `<p><strong>${escapeForSheet(currentTrack.title)}</strong></p>`;
+
       openSheet("Track identified", `
         <div class="v78-identify-help">
           ${artistLine}
-          <p>This title came directly from ${escapeForSheet(stationName)}'s live metadata feed.</p>
-          <div class="v78-help-actions">
-            <a class="v78-help-action" href="https://www.shazam.com/apps"
-               target="_blank" rel="noopener">Open Shazam</a>
-          </div>
+          <p>
+            This title came from ${escapeForSheet(stationName)}'s live metadata.
+            Tap the Now Playing strip to see recently heard titles.
+          </p>
         </div>
       `);
       return;
@@ -809,19 +832,42 @@
     if (isAppleMobile()) {
       openSheet("Identify this song", `
         <div class="v78-identify-help">
-          <h3>Use the iPhone / iPad Music Recognition button</h3>
+          <h3>Use Music Recognition on this device</h3>
           <p>
-            Keep ${escapeForSheet(stationName)} playing, open Control Centre,
-            and tap <strong>Recognise Music</strong>. You can also ask Siri,
-            “What song is this?”
+            Keep ${escapeForSheet(stationName)} playing. Open Control Centre and
+            tap <strong>Recognise Music</strong>, or ask Siri
+            <strong>“What song is this?”</strong>.
           </p>
-          <div class="v78-help-actions">
-            <a class="v78-help-action" href="https://www.shazam.com/apps"
-               target="_blank" rel="noopener">Open Shazam</a>
-          </div>
           <div class="v78-help-note">
-            A normal web page cannot directly start Apple's built-in Shazam
-            listener. Native ShazamKit integration would require an iOS app.
+            Apple builds Shazam recognition into iPhone/iPad, but a normal web
+            page is not allowed to press that system control for you.
+          </div>
+        </div>
+      `);
+      return;
+    }
+
+    if (isSamsungAndroid()) {
+      openSheet("Identify this song", `
+        <div class="v78-identify-help">
+          <h3>Samsung: use Music Search without leaving the radio</h3>
+          <p>
+            Keep ${escapeForSheet(stationName)} playing. Press and hold the
+            <strong>Home button / navigation gesture bar</strong> to open
+            <strong>Circle to Search</strong>, then tap the
+            <strong>music-note / Music Search</strong> button.
+          </p>
+          <p>
+            If you prefer Shazam, enable its <strong>Notification bar</strong>
+            option once. Then while Alaina Live is playing, swipe down and tap
+            <strong>Shazam</strong>. Shazam can recognise audio playing on the
+            same Android device, including through headphones.
+          </p>
+          <div class="v78-help-note">
+            V7.8.1 deliberately stays in Alaina Live. The previous button used
+            an undocumented Shazam Android intent; current Shazam does not
+            expose that recognition action to web browsers, which is why
+            Chrome sent you to the install website instead.
           </div>
         </div>
       `);
@@ -829,32 +875,23 @@
     }
 
     if (isAndroid()) {
-      // Chrome can hand an intent to an installed Android application from a
-      // user click. The START_TAGGING action is best-effort because Shazam
-      // doesn't publish a stable browser-facing recognition URL.
-      const fallback = encodeURIComponent("https://www.shazam.com/apps");
-      const intent =
-        `intent://#Intent;` +
-        `action=com.shazam.android.intent.actions.START_TAGGING;` +
-        `package=com.shazam.android;` +
-        `S.browser_fallback_url=${fallback};end`;
-
       openSheet("Identify this song", `
         <div class="v78-identify-help">
-          <h3>Try Shazam on this device</h3>
+          <h3>Use Shazam from Android's notification shade</h3>
           <p>
-            Keep ${escapeForSheet(stationName)} playing. The button below
-            asks Android to open Shazam's recognition action. If it isn't
-            available, your browser falls back to Shazam's app page.
+            Keep ${escapeForSheet(stationName)} playing. In Shazam settings,
+            enable <strong>Notification bar</strong> (or Pop-Up Shazam) once.
+            Then swipe down while the radio is playing and tap
+            <strong>Shazam</strong>.
           </p>
-          <div class="v78-help-actions">
-            <a id="v78AndroidShazam" class="v78-help-action" href="${escapeForSheet(intent)}">
-              Identify with Shazam
-            </a>
-          </div>
+          <p>
+            Shazam supports identifying music that is playing on the same
+            Android device, with or without headphones.
+          </p>
           <div class="v78-help-note">
-            Samsung / Google song recognition can also be used from the
-            device's normal quick-panel or assistant controls.
+            A website cannot directly press Shazam's listening button because
+            Shazam does not publish a supported browser deep link for starting
+            recognition.
           </div>
         </div>
       `);
@@ -863,20 +900,20 @@
 
     openSheet("Identify this song", `
       <div class="v78-identify-help">
-        <h3>Use your device's music recognizer</h3>
+        <h3>Use Shazam in the browser</h3>
         <p>
-          Keep ${escapeForSheet(stationName)} playing and use Shazam or your
-          device's built-in song-recognition feature.
+          Keep ${escapeForSheet(stationName)} playing. On a desktop Chromium
+          browser, the Shazam extension can identify audio playing in the tab.
+          Shazam's website can also identify music through the microphone.
         </p>
         <div class="v78-help-actions">
-          <a class="v78-help-action" href="https://www.shazam.com/apps"
-             target="_blank" rel="noopener">Open Shazam</a>
+          <a class="v78-help-action" href="https://www.shazam.com/"
+             target="_blank" rel="noopener">Open Shazam Web</a>
         </div>
         <div class="v78-help-note">
-          The open-source fingerprint fallback is intentionally not enabled
-          yet. A static GitHub Pages site cannot reliably capture the raw
-          cross-origin audio from every station; that fallback needs a small
-          recognition service.
+          For a true one-tap Identify button inside Alaina Live on every
+          device, we need a small server-side audio recognition service rather
+          than an installed-app deep link.
         </div>
       </div>
     `);
