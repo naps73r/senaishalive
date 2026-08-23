@@ -3874,9 +3874,13 @@
       button.addEventListener("click", () => renderFeature(button.dataset.feature));
     });
 
+    let weatherRequestInFlight = false;
+
     async function fetchWeather(options = {}) {
-      // V7.8.5 WEATHER_FAST_START
+      // V7.8.6 WEATHER_ON_DEMAND
       const network = options.network !== false;
+
+      // Always restore a reasonably fresh cached value first.
       const cachedRaw = localStorage.getItem("alainaWeather");
       if (cachedRaw) {
         try {
@@ -3888,22 +3892,38 @@
         } catch (_) {}
       }
 
-      if (!network) return;
+      if (!network) {
+        return Boolean(weatherData?.current);
+      }
+
+      // Never launch duplicate Open-Meteo requests.
+      if (weatherRequestInFlight) {
+        return Boolean(weatherData?.current);
+      }
+
+      weatherRequestInFlight = true;
 
       try {
         const response = await fetch(WEATHER_URL, { cache: "no-store" });
         if (!response.ok) throw new Error("Weather HTTP " + response.status);
+
         weatherData = await response.json();
+
         localStorage.setItem("alainaWeather", JSON.stringify({
           savedAt: Date.now(),
           data: weatherData
         }));
+
         updateWeatherChip();
+        return true;
       } catch (error) {
-        console.warn("Weather unavailable:", error);
+        // A weather/DNS failure must never affect radio playback.
+        console.info("Weather refresh skipped:", error?.message || error);
+        return Boolean(weatherData?.current);
+      } finally {
+        weatherRequestInFlight = false;
       }
     }
-
     function updateWeatherChip() {
       if (!weatherData?.current) return;
       const code = WEATHER_CODES[weatherData.current.weather_code] || ["🌤️", "Weather"];
@@ -3920,35 +3940,58 @@
       if (!weatherData?.current) {
         featureContent.innerHTML = `
           <div class="feature-center">
-            <div class="feature-big-icon">🌤️</div>
-            <div class="feature-primary">Loading weather…</div>
+            <div class="feature-big-icon">ðŸŒ¤ï¸</div>
+            <div class="feature-primary">Loading weatherâ€¦</div>
             <div class="feature-secondary">Fetching the latest Bahrain conditions.</div>
           </div>`;
-        fetchWeather().then(() => {
-          if (!featureOverlay.hidden && featureTitle.textContent === "Bahrain Weather") renderWeather();
+
+        fetchWeather().then((available) => {
+          if (featureOverlay.hidden || featureTitle.textContent !== "Bahrain Weather") return;
+
+          if (available && weatherData?.current) {
+            renderWeather();
+            return;
+          }
+
+          featureContent.innerHTML = `
+            <div class="feature-center">
+              <div class="feature-big-icon">ðŸŒ¤ï¸</div>
+              <div class="feature-primary">Weather unavailable</div>
+              <div class="feature-secondary">
+                The weather service could not be reached right now.<br>
+                Radio playback is not affected.
+              </div>
+              <button type="button" class="feature-action" data-weather-retry>
+                Retry weather
+              </button>
+            </div>`;
+
+          featureContent
+            .querySelector("[data-weather-retry]")
+            ?.addEventListener("click", () => renderWeather(), { once: true });
         });
+
         return;
       }
 
       const c = weatherData.current;
       const daily = weatherData.daily || {};
-      const code = WEATHER_CODES[c.weather_code] || ["🌤️", "Current weather"];
+      const code = WEATHER_CODES[c.weather_code] || ["ðŸŒ¤ï¸", "Current weather"];
       const high = daily.temperature_2m_max?.[0];
       const low = daily.temperature_2m_min?.[0];
 
       featureContent.innerHTML = `
         <div class="feature-center">
           <div class="feature-big-icon">${code[0]}</div>
-          <div class="feature-primary">${Math.round(c.temperature_2m)}°C</div>
+          <div class="feature-primary">${Math.round(c.temperature_2m)}Â°C</div>
           <div class="feature-secondary">
-            ${escapeHtml(code[1])} · Feels like ${Math.round(c.apparent_temperature)}°C<br>
-            Humidity ${Math.round(c.relative_humidity_2m)}% · Wind ${Math.round(c.wind_speed_10m)} km/h
-            ${Number.isFinite(high) ? `<br>Today ${Math.round(high)}° / ${Math.round(low)}°` : ""}
+            ${escapeHtml(code[1])} Â· Feels like ${Math.round(c.apparent_temperature)}Â°C<br>
+            Humidity ${Math.round(c.relative_humidity_2m)}% Â· Wind ${Math.round(c.wind_speed_10m)} km/h
+            ${Number.isFinite(high) ? `<br>Today ${Math.round(high)}Â° / ${Math.round(low)}Â°` : ""}
           </div>
-          <div class="feature-attribution">Manama, Bahrain · Weather data: Open-Meteo</div>
+          <div class="feature-attribution">Manama, Bahrain Â· Weather data: Open-Meteo</div>
         </div>`;
     }
-
     async function loadNews() {
       // Prefer the local file generated by the included GitHub Action.
       try {
@@ -4762,10 +4805,9 @@
     // christmas / holi / diwali / bahrain / india / easter
     applySeasonalTheme();
 
-    // Restore cached weather immediately, but let the radio stream connect
-    // before making the online weather request.
+    // Restore cached weather only. Network weather is now strictly on-demand
+    // when the user opens the Weather feature.
     fetchWeather({ network: false });
-    setTimeout(() => fetchWeather(), 7000);
     setTimeout(() => showAlaina(greetingMessage()), 900);
 
   })();
@@ -5177,6 +5219,7 @@
   <script src="v782-echo.js?v=782"></script>
 </body>
 </html>
+
 
 
 
