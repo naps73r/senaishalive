@@ -3874,7 +3874,9 @@
       button.addEventListener("click", () => renderFeature(button.dataset.feature));
     });
 
-    async function fetchWeather() {
+    async function fetchWeather(options = {}) {
+      // V7.8.5 WEATHER_FAST_START
+      const network = options.network !== false;
       const cachedRaw = localStorage.getItem("alainaWeather");
       if (cachedRaw) {
         try {
@@ -3885,6 +3887,8 @@
           }
         } catch (_) {}
       }
+
+      if (!network) return;
 
       try {
         const response = await fetch(WEATHER_URL, { cache: "no-store" });
@@ -4757,7 +4761,11 @@
     // ?theme=ramadan / eid / hajj / muharram / onam / vishu /
     // christmas / holi / diwali / bahrain / india / easter
     applySeasonalTheme();
-    fetchWeather();
+
+    // Restore cached weather immediately, but let the radio stream connect
+    // before making the online weather request.
+    fetchWeather({ network: false });
+    setTimeout(() => fetchWeather(), 7000);
     setTimeout(() => showAlaina(greetingMessage()), 900);
 
   })();
@@ -5165,10 +5173,11 @@
   })();
   </script>
 
-  <script src="v78-now-playing.js?v=782"></script>
+  <script src="v78-now-playing.js?v=7851"></script>
   <script src="v782-echo.js?v=782"></script>
 </body>
 </html>
+
 
 
 

@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   "use strict";
 
   /*
@@ -29,6 +29,11 @@
   const POLL_MS = 15000;
   const SOURCE_TIMEOUT_MS = 6500;
 
+  // V7.8.5 FAST_START_METADATA
+  // Normal radio use must not make extra cross-origin metadata requests.
+  // Add ?metadata=1 only when we deliberately want to test those feeds.
+  const AUTO_METADATA_NETWORK =
+    new URLSearchParams(window.location.search).get("metadata") === "1";
   const CONFIGS = [
     {
       slug: "tamilfm",
@@ -630,6 +635,10 @@
       return;
     }
 
+    if (!AUTO_METADATA_NETWORK) {
+      setTrackUnavailable("Fast start Â· tap Identify for song recognition");
+      return;
+    }
     setTrackPending();
 
     if (activeConfig.metadata.type === "zeno") {
@@ -642,7 +651,7 @@
       return;
     }
 
-    pollMetadataOnce(generation).then(found => {
+    pollMetadataOnce(generation).catch(() => false).then(found => {
       if (generation !== metadataGeneration) return;
       if (!found && !currentTrack) {
         setTrackUnavailable("No browser-readable title yet · tap Identify");
@@ -932,3 +941,4 @@
 
   selectDeepLinkStation();
 })();
+
