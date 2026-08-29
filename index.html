@@ -2955,6 +2955,7 @@
   <link rel="stylesheet" href="v782-echo.css?v=782">
   <link rel="stylesheet" href="v783-echo-dashboard.css?v=783">
   <link rel="stylesheet" href="v784-desktop-volume.css?v=784">
+  <link rel="stylesheet" href="v79-seamless.css?v=79">
 </head>
 
 <body>
@@ -3320,10 +3321,16 @@
   </div>
 
   <audio id="radioPlayer" preload="none" playsinline></audio>
+  <audio id="radioPlayerStandby" preload="none" playsinline aria-hidden="true"></audio>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 
   <script>
-    const audio = document.getElementById("radioPlayer");
+    // SENAISHA_V79_SEAMLESS_HANDOFF
+    // Two decks: the current station keeps playing while the standby deck
+    // connects to the requested station. The variables are swapped only
+    // after the new station is genuinely playing.
+    let audio = document.getElementById("radioPlayer");
+    let standbyAudio = document.getElementById("radioPlayerStandby");
     const stations = Array.from(document.querySelectorAll(".station-card"));
     const playPauseButton = document.getElementById("playPauseButton");
     const playPauseIcon = document.getElementById("playPauseIcon");
@@ -3347,6 +3354,13 @@
 
     let currentStationIndex = -1;
     let hls = null;
+    let standbyHls = null;
+    let switchGeneration = 0;
+    let isStationSwitching = false;
+    let masterVolume = 1;
+
+    const STATION_CROSSFADE_MS = 850;
+    const STATION_CONNECT_TIMEOUT_MS = 18000;
     let deferredPrompt = null;
     let equalizerTimer = null;
     let equalizerLevels = eqBars.map(() => 0.12);
@@ -3479,74 +3493,388 @@
       updateMediaSession(card);
     }
 
+    function destroyStandbyHls() {
+      if (standbyHls) {
+        try { standbyHls.destroy(); } catch (_) {}
+        standbyHls = null;
+      }
+    }
+
+    function stopDeck(deck, role) {
+      if (!deck) return;
+
+      try { deck.pause(); } catch (_) {}
+
+      if (role === "active") {
+        destroyHls();
+      } else {
+        destroyStandbyHls();
+      }
+
+      try {
+        deck.removeAttribute("src");
+        deck.load();
+      } catch (_) {}
+
+      deck.volume = role === "active" ? masterVolume : 0;
+    }
+
+    function clearTuningState() {
+      stations.forEach(station => station.classList.remove("is-tuning"));
+    }
+
+    function markTuning(index) {
+      clearTuningState();
+      if (index >= 0 && index < stations.length) {
+        stations[index].classList.add("is-tuning");
+      }
+    }
+
+    function isDeckActuallyPlaying(deck) {
+      return Boolean(
+        deck &&
+        !deck.paused &&
+        !deck.ended &&
+        deck.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+      );
+    }
+
+    function waitForDeckPlaying(deck, timeoutMs, generation) {
+      return new Promise((resolve, reject) => {
+        if (generation !== switchGeneration) {
+          reject(new Error("Superseded station request"));
+          return;
+        }
+
+        if (isDeckActuallyPlaying(deck)) {
+          resolve();
+          return;
+        }
+
+        let timer = null;
+
+        const cleanup = () => {
+          clearTimeout(timer);
+          deck.removeEventListener("playing", onPlaying);
+          deck.removeEventListener("error", onError);
+          deck.removeEventListener("abort", onAbort);
+        };
+
+        const onPlaying = () => {
+          cleanup();
+          if (generation !== switchGeneration) {
+            reject(new Error("Superseded station request"));
+            return;
+          }
+          resolve();
+        };
+
+        const onError = () => {
+          cleanup();
+          reject(new Error("Target station failed to play"));
+        };
+
+        const onAbort = () => {
+          cleanup();
+          reject(new Error("Target station was aborted"));
+        };
+
+        deck.addEventListener("playing", onPlaying, { once: true });
+        deck.addEventListener("error", onError, { once: true });
+        deck.addEventListener("abort", onAbort, { once: true });
+
+        timer = setTimeout(() => {
+          cleanup();
+          reject(new Error("Target station connection timed out"));
+        }, timeoutMs);
+      });
+    }
+
+    async function startDeck(deck, streamUrl, role, generation) {
+      if (generation !== switchGeneration) {
+        throw new Error("Superseded station request");
+      }
+
+      if (role === "active") {
+        destroyHls();
+      } else {
+        destroyStandbyHls();
+      }
+
+      try { deck.pause(); } catch (_) {}
+      try {
+        deck.removeAttribute("src");
+        deck.load();
+      } catch (_) {}
+
+      deck.autoplay = true;
+      deck.volume = role === "active" ? masterVolume : 0;
+
+      const playingPromise = waitForDeckPlaying(
+        deck,
+        STATION_CONNECT_TIMEOUT_MS,
+        generation
+      );
+
+      if (/\.m3u8(?:$|\?)/i.test(streamUrl)) {
+        if (window.Hls && Hls.isSupported()) {
+          const instance = new Hls({
+            enableWorker: true,
+            lowLatencyMode: false,
+            backBufferLength: 30
+          });
+
+          if (role === "active") hls = instance;
+          else standbyHls = instance;
+
+          instance.attachMedia(deck);
+
+          instance.on(Hls.Events.MEDIA_ATTACHED, () => {
+            if (generation !== switchGeneration) return;
+            instance.loadSource(streamUrl);
+          });
+
+          instance.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (generation !== switchGeneration) return;
+            deck.play().catch(() => {});
+          });
+
+          instance.on(Hls.Events.ERROR, (_, data) => {
+            if (data?.fatal) {
+              try {
+                const ev = new Event("error");
+                deck.dispatchEvent(ev);
+              } catch (_) {}
+            }
+          });
+        } else if (deck.canPlayType("application/vnd.apple.mpegurl")) {
+          deck.src = streamUrl;
+          deck.load();
+          deck.play().catch(() => {});
+        } else {
+          throw new Error("HLS is not supported on this browser");
+        }
+      } else {
+        deck.src = streamUrl;
+        deck.load();
+
+        // Call play immediately from the user's station-selection action.
+        // The promise may remain pending while the stream buffers.
+        deck.play().catch(error => {
+          if (error?.name === "NotAllowedError") {
+            try {
+              const ev = new Event("error");
+              deck.dispatchEvent(ev);
+            } catch (_) {}
+          }
+        });
+      }
+
+      await playingPromise;
+    }
+
+    function crossfadeDecks(oldDeck, newDeck, generation) {
+      const duration = STATION_CROSSFADE_MS;
+      const startedAt = performance.now();
+
+      return new Promise(resolve => {
+        const frame = now => {
+          if (generation !== switchGeneration) {
+            resolve(false);
+            return;
+          }
+
+          const p = Math.min(1, Math.max(0, (now - startedAt) / duration));
+
+          oldDeck.volume = masterVolume * (1 - p);
+          newDeck.volume = masterVolume * p;
+
+          if (p < 1) {
+            requestAnimationFrame(frame);
+          } else {
+            oldDeck.volume = 0;
+            newDeck.volume = masterVolume;
+            resolve(true);
+          }
+        };
+
+        requestAnimationFrame(frame);
+      });
+    }
+
     async function playCurrentStation() {
       if (currentStationIndex < 0) {
         const saved = Number(localStorage.getItem("alainaLastStation"));
-        const index = Number.isInteger(saved) && saved >= 0 && saved < stations.length ? saved : 0;
+        const index =
+          Number.isInteger(saved) && saved >= 0 && saved < stations.length
+            ? saved
+            : 0;
+
         updateSelectedStation(index);
       }
 
       const card = stations[currentStationIndex];
       const streamUrl = card.dataset.src;
+      const generation = ++switchGeneration;
 
-      destroyHls();
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
+      isStationSwitching = false;
+      clearTuningState();
+      stopDeck(standbyAudio, "standby");
 
       setStatus("Connecting");
       setPlayVisual(false);
 
       try {
-        if (/\.m3u8(?:$|\?)/i.test(streamUrl)) {
-          if (window.Hls && Hls.isSupported()) {
-            hls = new Hls({
-              enableWorker: true,
-              lowLatencyMode: false,
-              backBufferLength: 30
-            });
+        await startDeck(audio, streamUrl, "active", generation);
 
-            hls.loadSource(streamUrl);
-            hls.attachMedia(audio);
+        if (generation !== switchGeneration) return;
 
-            hls.on(Hls.Events.MANIFEST_PARSED, async () => {
-              try {
-                await audio.play();
-              } catch (error) {
-                console.warn("Playback needs a user gesture:", error);
-                setStatus("Tap Play");
-              }
-            });
+        audio.volume = masterVolume;
+        setStatus("Live", "live");
+        setPlayVisual(true);
+      } catch (error) {
+        if (generation !== switchGeneration) return;
 
-            hls.on(Hls.Events.ERROR, (_, data) => {
-              if (data && data.fatal) {
-                setStatus("Unavailable", "error");
-                setPlayVisual(false);
-              }
-            });
-          } else if (audio.canPlayType("application/vnd.apple.mpegurl")) {
-            audio.src = streamUrl;
-            await audio.play();
-          } else {
-            setStatus("Unsupported", "error");
-            return;
+        console.error("Station playback failed:", error);
+
+        if (error?.name === "NotAllowedError") {
+          setStatus("Tap Play");
+        } else {
+          setStatus("Unavailable", "error");
+        }
+
+        setPlayVisual(false);
+      }
+    }
+
+    async function handoffToStation(index) {
+      if (index < 0 || index >= stations.length) return;
+
+      const targetCard = stations[index];
+
+      // If the current deck is not actually playing, there is nothing useful
+      // to preserve. Fall back to a normal direct connection.
+      if (!isDeckActuallyPlaying(audio)) {
+        updateSelectedStation(index);
+        await playCurrentStation();
+        return;
+      }
+
+      const generation = ++switchGeneration;
+      isStationSwitching = true;
+
+      // Cancel/clear any previous standby attempt, but NEVER touch the
+      // currently audible station.
+      stopDeck(standbyAudio, "standby");
+      standbyAudio.volume = 0;
+
+      markTuning(index);
+      setStatus(`Tuning ${targetCard.dataset.name}â€¦`);
+      setPlayVisual(true);
+
+      try {
+        await startDeck(
+          standbyAudio,
+          targetCard.dataset.src,
+          "standby",
+          generation
+        );
+
+        if (generation !== switchGeneration) {
+          stopDeck(standbyAudio, "standby");
+          return;
+        }
+
+        setStatus("Switchingâ€¦");
+
+        const oldAudio = audio;
+        const newAudio = standbyAudio;
+        const oldHls = hls;
+        const newHls = standbyHls;
+
+        const completed = await crossfadeDecks(
+          oldAudio,
+          newAudio,
+          generation
+        );
+
+        if (!completed || generation !== switchGeneration) {
+          // A newer station request won. Do not commit this one.
+          return;
+        }
+
+        // Retire only the old deck AFTER the new deck has proven it can play.
+        try { oldAudio.pause(); } catch (_) {}
+        if (oldHls) {
+          try { oldHls.destroy(); } catch (_) {}
+        }
+        try {
+          oldAudio.removeAttribute("src");
+          oldAudio.load();
+        } catch (_) {}
+        oldAudio.volume = 0;
+
+        // Promote the standby deck to active and recycle the old deck.
+        audio = newAudio;
+        hls = newHls;
+        standbyAudio = oldAudio;
+        standbyHls = null;
+
+        updateSelectedStation(index);
+        clearTuningState();
+
+        audio.volume = masterVolume;
+        setStatus("Live", "live");
+        setPlayVisual(true);
+        isStationSwitching = false;
+      } catch (error) {
+        if (generation !== switchGeneration) return;
+
+        console.warn(
+          `Could not tune ${targetCard.dataset.name}; keeping current station:`,
+          error
+        );
+
+        stopDeck(standbyAudio, "standby");
+        clearTuningState();
+        isStationSwitching = false;
+
+        // The existing station was intentionally never stopped.
+        if (isDeckActuallyPlaying(audio)) {
+          audio.volume = masterVolume;
+          setStatus("Live", "live");
+          setPlayVisual(true);
+
+          if (typeof window.showAlaina === "function") {
+            window.showAlaina(
+              `${targetCard.dataset.name} is unavailable â€” keeping the current station.`
+            );
           }
         } else {
-          audio.src = streamUrl;
-          await audio.play();
+          setStatus("Unavailable", "error");
+          setPlayVisual(false);
         }
-      } catch (error) {
-        console.error("Station playback failed:", error);
-        setStatus("Unavailable", "error");
-        setPlayVisual(false);
       }
     }
 
     async function selectAndPlay(index) {
       const sameStation = index === currentStationIndex;
 
-      if (sameStation && !audio.paused && !audio.ended) {
+      if (sameStation && isDeckActuallyPlaying(audio)) {
+        // Same card behaves like pause.
+        switchGeneration++;
+        stopDeck(standbyAudio, "standby");
+        clearTuningState();
+        isStationSwitching = false;
         audio.pause();
+        return;
+      }
+
+      // A different station while audio is already live gets the seamless
+      // handoff. The visible "Now Playing" station remains truthful until the
+      // target has really started.
+      if (!sameStation && isDeckActuallyPlaying(audio)) {
+        await handoffToStation(index);
         return;
       }
 
@@ -3554,6 +3882,7 @@
 
       if (sameStation && audio.src && audio.paused && !hls) {
         try {
+          audio.volume = masterVolume;
           await audio.play();
           return;
         } catch (_) {
@@ -3570,16 +3899,17 @@
       if (currentStationIndex < 0) {
         nextIndex = direction < 0 ? stations.length - 1 : 0;
       } else {
-        nextIndex = (currentStationIndex + direction + stations.length) % stations.length;
+        nextIndex =
+          (currentStationIndex + direction + stations.length) %
+          stations.length;
       }
 
-      updateSelectedStation(nextIndex);
-      playCurrentStation();
+      selectAndPlay(nextIndex);
     }
-
     stations.forEach((card, index) => {
       card.addEventListener("click", async () => {
         await selectAndPlay(index);
+
         if (isMobileFlipLayout()) {
           window.setTimeout(() => setMobileFace(false), 110);
         }
@@ -3590,57 +3920,89 @@
     nextButton.addEventListener("click", () => changeStation(1));
 
     playPauseButton.addEventListener("click", async () => {
+      if (isStationSwitching) {
+        // The currently audible station is still safe to pause. Cancel the
+        // pending target first.
+        switchGeneration++;
+        stopDeck(standbyAudio, "standby");
+        clearTuningState();
+        isStationSwitching = false;
+      }
+
       if (currentStationIndex < 0) {
         await playCurrentStation();
         return;
       }
 
-      if (!audio.paused) {
+      if (isDeckActuallyPlaying(audio)) {
         audio.pause();
         return;
       }
 
       if (audio.src || hls) {
         try {
+          audio.volume = masterVolume;
           await audio.play();
+          return;
         } catch (_) {
-          await playCurrentStation();
+          // Reload below.
         }
-      } else {
-        await playCurrentStation();
       }
+
+      await playCurrentStation();
     });
 
     volumeSlider.addEventListener("input", () => {
-      audio.volume = Number(volumeSlider.value);
+      masterVolume = Number(volumeSlider.value);
       localStorage.setItem("alainaVolume", volumeSlider.value);
-    });
 
-    audio.addEventListener("playing", () => {
-      setStatus("Live", "live");
-      setPlayVisual(true);
-    });
-
-    audio.addEventListener("waiting", () => {
-      setStatus("Buffering");
-    });
-
-    audio.addEventListener("stalled", () => {
-      setStatus("Reconnecting");
-    });
-
-    audio.addEventListener("pause", () => {
-      if (currentStationIndex >= 0 && !audio.ended) {
-        setStatus("Paused");
+      if (!isStationSwitching) {
+        audio.volume = masterVolume;
       }
-      setPlayVisual(false);
     });
 
-    audio.addEventListener("error", () => {
-      setStatus("Unavailable", "error");
-      setPlayVisual(false);
-    });
+    function attachDeckStatusEvents(deck) {
+      deck.addEventListener("playing", () => {
+        if (deck !== audio) return;
 
+        setStatus("Live", "live");
+        setPlayVisual(true);
+      });
+
+      deck.addEventListener("waiting", () => {
+        if (deck !== audio || isStationSwitching) return;
+        setStatus("Buffering");
+      });
+
+      deck.addEventListener("stalled", () => {
+        if (deck !== audio || isStationSwitching) return;
+        setStatus("Reconnecting");
+      });
+
+      deck.addEventListener("pause", () => {
+        if (deck !== audio) return;
+
+        if (currentStationIndex >= 0 && !deck.ended && !isStationSwitching) {
+          setStatus("Paused");
+        }
+
+        if (!isStationSwitching) {
+          setPlayVisual(false);
+        }
+      });
+
+      deck.addEventListener("error", () => {
+        // Standby errors are handled by handoffToStation() and must never
+        // mark the currently audible station as failed.
+        if (deck !== audio) return;
+
+        setStatus("Unavailable", "error");
+        setPlayVisual(false);
+      });
+    }
+
+    attachDeckStatusEvents(audio);
+    attachDeckStatusEvents(standbyAudio);
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       deferredPrompt = event;
@@ -3682,8 +4044,14 @@
 
     const savedVolume = Number(localStorage.getItem("alainaVolume"));
     if (Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1) {
+      masterVolume = savedVolume;
       audio.volume = savedVolume;
+      standbyAudio.volume = 0;
       volumeSlider.value = String(savedVolume);
+    } else {
+      masterVolume = Number(volumeSlider.value);
+      audio.volume = masterVolume;
+      standbyAudio.volume = 0;
     }
 
     const savedStation = Number(localStorage.getItem("alainaLastStation"));
@@ -5219,6 +5587,7 @@
   <script src="v782-echo.js?v=782"></script>
 </body>
 </html>
+
 
 
 
