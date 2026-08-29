@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -3769,7 +3769,7 @@
       standbyAudio.volume = 0;
 
       markTuning(index);
-      setStatus(`Tuning ${targetCard.dataset.name}â€¦`);
+      setStatus(`Tuning ${targetCard.dataset.name}\u2026`);
       setPlayVisual(true);
 
       try {
@@ -3785,7 +3785,7 @@
           return;
         }
 
-        setStatus("Switchingâ€¦");
+        setStatus("Switching\u2026");
 
         const oldAudio = audio;
         const newAudio = standbyAudio;
@@ -3847,7 +3847,7 @@
 
           if (typeof window.showAlaina === "function") {
             window.showAlaina(
-              `${targetCard.dataset.name} is unavailable â€” keeping the current station.`
+              `${targetCard.dataset.name} is unavailable \u2014 keeping the current station.`
             );
           }
         } else {
@@ -4308,8 +4308,8 @@
       if (!weatherData?.current) {
         featureContent.innerHTML = `
           <div class="feature-center">
-            <div class="feature-big-icon">ðŸŒ¤ï¸</div>
-            <div class="feature-primary">Loading weatherâ€¦</div>
+            <div class="feature-big-icon">🌤️</div>
+            <div class="feature-primary">Loading weather\u2026</div>
             <div class="feature-secondary">Fetching the latest Bahrain conditions.</div>
           </div>`;
 
@@ -4323,7 +4323,7 @@
 
           featureContent.innerHTML = `
             <div class="feature-center">
-              <div class="feature-big-icon">ðŸŒ¤ï¸</div>
+              <div class="feature-big-icon">🌤️</div>
               <div class="feature-primary">Weather unavailable</div>
               <div class="feature-secondary">
                 The weather service could not be reached right now.<br>
@@ -4344,20 +4344,20 @@
 
       const c = weatherData.current;
       const daily = weatherData.daily || {};
-      const code = WEATHER_CODES[c.weather_code] || ["ðŸŒ¤ï¸", "Current weather"];
+      const code = WEATHER_CODES[c.weather_code] || ["🌤️", "Current weather"];
       const high = daily.temperature_2m_max?.[0];
       const low = daily.temperature_2m_min?.[0];
 
       featureContent.innerHTML = `
         <div class="feature-center">
           <div class="feature-big-icon">${code[0]}</div>
-          <div class="feature-primary">${Math.round(c.temperature_2m)}Â°C</div>
+          <div class="feature-primary">${Math.round(c.temperature_2m)}°C</div>
           <div class="feature-secondary">
-            ${escapeHtml(code[1])} Â· Feels like ${Math.round(c.apparent_temperature)}Â°C<br>
-            Humidity ${Math.round(c.relative_humidity_2m)}% Â· Wind ${Math.round(c.wind_speed_10m)} km/h
-            ${Number.isFinite(high) ? `<br>Today ${Math.round(high)}Â° / ${Math.round(low)}Â°` : ""}
+            ${escapeHtml(code[1])} · Feels like ${Math.round(c.apparent_temperature)}°C<br>
+            Humidity ${Math.round(c.relative_humidity_2m)}% · Wind ${Math.round(c.wind_speed_10m)} km/h
+            ${Number.isFinite(high) ? `<br>Today ${Math.round(high)}° / ${Math.round(low)}°` : ""}
           </div>
-          <div class="feature-attribution">Manama, Bahrain Â· Weather data: Open-Meteo</div>
+          <div class="feature-attribution">Manama, Bahrain · Weather data: Open-Meteo</div>
         </div>`;
     }
     async function loadNews() {
