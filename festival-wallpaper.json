@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-22T21:39:06.138674+00:00",
+  "updated": "2026-08-30T23:32:45.900223+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -44,6 +44,20 @@
       "original_height": 1542,
       "source": "Wikimedia Commons",
       "version": "0bc9eb719132216a"
+    },
+    "eid": {
+      "label": "Eid",
+      "image": "festival-wallpapers/eid.jpg",
+      "creator": "Dodik007",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Takbir_Keliling.jpg",
+      "source_title": "File:Takbir Keliling.jpg",
+      "description": "A passionate tradition in welcoming Eid al-Fitr, where Muslims recite takbir as a form of glorification of Allah SWT. This activity is usually carried out by going around villages or streets, either on foot or by vehicle, while chanting the phrases Allahu Akba",
+      "original_width": 5333,
+      "original_height": 4000,
+      "source": "Wikimedia Commons",
+      "version": "8bffab83785924a6"
     }
   }
 }
