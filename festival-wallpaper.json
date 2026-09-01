@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-30T23:32:45.900223+00:00",
+  "updated": "2026-09-01T00:38:38.437078+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -58,6 +58,20 @@
       "original_height": 4000,
       "source": "Wikimedia Commons",
       "version": "8bffab83785924a6"
+    },
+    "hajj": {
+      "label": "Hajj",
+      "image": "festival-wallpapers/hajj.jpg",
+      "creator": "Ilhamnobi",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Mecca_2012.jpg",
+      "source_title": "File:Mecca 2012.jpg",
+      "description": "Taken during my family's visit to Mecca, the holiest site in Islam, in 2012.",
+      "original_width": 3264,
+      "original_height": 1832,
+      "source": "Wikimedia Commons",
+      "version": "a1fcf709b13b4490"
     }
   }
 }
