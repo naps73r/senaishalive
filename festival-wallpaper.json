@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T00:38:38.437078+00:00",
+  "updated": "2026-09-01T23:20:41.925650+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -72,6 +72,20 @@
       "original_height": 1832,
       "source": "Wikimedia Commons",
       "version": "a1fcf709b13b4490"
+    },
+    "muharram": {
+      "label": "Muharram",
+      "image": "festival-wallpapers/muharram.jpg",
+      "creator": "Mona Maher",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:%D9%87%D9%84%D8%A7%D9%84_%D8%B1%D9%85%D8%B6%D8%A7%D9%86.jpg",
+      "source_title": "File:هلال رمضان.jpg",
+      "description": "The statue of the crescent in one of the squares was decorated in color and beautifully lit to celebrate the month of Ramadan in Jordan .",
+      "original_width": 960,
+      "original_height": 540,
+      "source": "Wikimedia Commons",
+      "version": "2e687e8a43876ea6"
     }
   }
 }
