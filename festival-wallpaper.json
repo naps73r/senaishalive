@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T23:20:41.925650+00:00",
+  "updated": "2026-09-02T23:20:52.241157+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -86,6 +86,20 @@
       "original_height": 540,
       "source": "Wikimedia Commons",
       "version": "2e687e8a43876ea6"
+    },
+    "vishu": {
+      "label": "Vishu",
+      "image": "festival-wallpapers/vishu.jpg",
+      "creator": "BHARATHESHA ALASANDEMAJALU",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Bisu_Kani_in_Tulunadu_Coastal_Karnataka_(27).jpg",
+      "source_title": "File:Bisu Kani in Tulunadu Coastal Karnataka (27).jpg",
+      "description": "New year of Tuluvas ತುಳುವೆರೆಗ್ ಬಿಸು ಪರ್ಬ ಪೊಸ ವರ್ಸೊದ ಪರ್ಬ",
+      "original_width": 6000,
+      "original_height": 4000,
+      "source": "Wikimedia Commons",
+      "version": "d21b02b22a1f412f"
     }
   }
 }
