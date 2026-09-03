@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T23:20:52.241157+00:00",
+  "updated": "2026-09-03T23:18:29.814811+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -100,6 +100,20 @@
       "original_height": 4000,
       "source": "Wikimedia Commons",
       "version": "d21b02b22a1f412f"
+    },
+    "holi": {
+      "label": "Holi",
+      "image": "festival-wallpapers/holi.jpg",
+      "creator": "Arnab21th",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Colour_in_the_Air.jpg",
+      "source_title": "File:Colour in the Air.jpg",
+      "description": "Spread the colour",
+      "original_width": 3648,
+      "original_height": 2736,
+      "source": "Wikimedia Commons",
+      "version": "dae5792b688f8ef6"
     }
   }
 }
