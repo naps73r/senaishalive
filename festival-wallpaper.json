@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T23:18:29.814811+00:00",
+  "updated": "2026-09-04T23:03:57.976422+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -114,6 +114,20 @@
       "original_height": 2736,
       "source": "Wikimedia Commons",
       "version": "dae5792b688f8ef6"
+    },
+    "christmas": {
+      "label": "Christmas",
+      "image": "festival-wallpapers/christmas.jpg",
+      "creator": "midnightbreakfastcafe",
+      "license": "CC BY 2.0",
+      "license_url": "https://creativecommons.org/licenses/by/2.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Christmas_lights_and_Xinzhongshan_Stage_20201230.jpg",
+      "source_title": "File:Christmas lights and Xinzhongshan Stage 20201230.jpg",
+      "description": "​耶誕節期間，心中山線形公園心中山舞台背側燈飾。",
+      "original_width": 18000,
+      "original_height": 10125,
+      "source": "Wikimedia Commons",
+      "version": "07106f7ce6243792"
     }
   }
 }
