@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T23:03:57.976422+00:00",
+  "updated": "2026-09-05T22:56:42.911523+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -128,6 +128,20 @@
       "original_height": 10125,
       "source": "Wikimedia Commons",
       "version": "07106f7ce6243792"
+    },
+    "easter": {
+      "label": "Easter",
+      "image": "festival-wallpapers/easter.jpg",
+      "creator": "Denise Hastert",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:HAPPY_EASTER.jpg",
+      "source_title": "File:HAPPY EASTER.jpg",
+      "description": "Easter Eggs from Luxembourg",
+      "original_width": 4000,
+      "original_height": 2248,
+      "source": "Wikimedia Commons",
+      "version": "19f70b7753dda8a3"
     }
   }
 }
