@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T22:56:42.911523+00:00",
+  "updated": "2026-09-06T22:54:59.325267+00:00",
   "source": "Wikimedia Commons",
   "note": "Images are cached locally. See each entry for creator, license and Wikimedia Commons source page.",
   "wallpapers": {
@@ -142,6 +142,20 @@
       "original_height": 2248,
       "source": "Wikimedia Commons",
       "version": "19f70b7753dda8a3"
+    },
+    "bahrain": {
+      "label": "Bahrain National Day",
+      "image": "festival-wallpapers/bahrain.jpg",
+      "creator": "Al Jazeera English",
+      "license": "CC BY-SA 2.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Manama_sunset_-_Flickr_-_Al_Jazeera_English.jpg",
+      "source_title": "File:Manama sunset - Flickr - Al Jazeera English.jpg",
+      "description": "The small island nation of Bahrain is reeling from anti-government protests, which have disrupted the economy and sent shock waves through the Gulf.",
+      "original_width": 4000,
+      "original_height": 2248,
+      "source": "Wikimedia Commons",
+      "version": "0be182b9791e82e9"
     }
   }
 }
